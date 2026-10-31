@@ -122,7 +122,7 @@ The shipped build was exercised in headless Chrome across all 20 tabs:
 
 ## Credits
 
-Built with **[OpenCode](https://opencode.ai)** and **DeepSeek V4.1 Flash** (`opencode-go/deepseek-v4.1-flash`).
+Built with **[OpenCode](https://opencode.ai)** and **DeepSeek V4.1 Flash** (`opencode-go/deepseek-v4.1-flash`). Build duration and token usage are recorded in [STATE.md](STATE.md) and [state.json](state.json).
 
 3D powered by [Three.js](https://threejs.org/) r128 and OrbitControls by mrdoob and contributors. Typography: Space Grotesk and JetBrains Mono via Google Fonts (SIL Open Font License).
 

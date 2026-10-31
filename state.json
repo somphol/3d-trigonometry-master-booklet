@@ -1,0 +1,102 @@
+{
+  "project": "3d-trigonometry-master-booklet",
+  "description": "TrigLab 3D — a 20-tab interactive 3D trigonometry master booklet with real-world engineering simulators, generative drills, and a portable spaced-repetition system.",
+  "build": {
+    "startedAt": "2026-10-31T23:31:24.546000Z",
+    "completedAt": "2026-10-31T23:49:56Z",
+    "durationSeconds": 1111,
+    "durationHuman": "18m 31s",
+    "timezone": "UTC"
+  },
+  "tokens": {
+    "input": 360017,
+    "output": 103875,
+    "reasoning": 51738,
+    "cacheRead": 10177664,
+    "cacheWrite": 1583,
+    "total": 515630,
+    "totalWithCache": 10694877,
+    "note": "Snapshot from the OpenCode session record when the project was packaged. total = input + output + reasoning. Cache reads/writes are reported separately because they are a subset of context usage."
+  },
+  "cost": {
+    "usd": 0.0,
+    "note": "As reported by the OpenCode session record."
+  },
+  "sessionId": "ses_e6bb24505ffelmj1LvBX4VBJSx",
+  "model": {
+    "name": "DeepSeek V4.1 Flash",
+    "providerID": "opencode-go",
+    "modelID": "deepseek-v4.1-flash"
+  },
+  "harness": {
+    "name": "OpenCode",
+    "version": "v2.2.5"
+  },
+  "repository": "https://github.com/somphol/3d-trigonometry-master-booklet",
+  "pages": "https://somphol.github.io/3d-trigonometry-master-booklet/",
+  "application": {
+    "modules": 20,
+    "threeScenes": 20,
+    "exerciseGenerators": 20,
+    "srsIntervalsDays": {
+      "level1": 1,
+      "level2": 3,
+      "level3": 7,
+      "level4": 30
+    },
+    "storageKey": "triglab3d.progress.v1",
+    "progressExport": "trig_srs_progress.json",
+    "static": true,
+    "backend": false,
+    "buildStep": false
+  },
+  "source": {
+    "files": {
+      "index.html": {
+        "bytes": 8495,
+        "lines": 165
+      },
+      "style.css": {
+        "bytes": 39320,
+        "lines": 1327
+      },
+      "script.js": {
+        "bytes": 199403,
+        "lines": 4544
+      }
+    },
+    "totalLines": 6036,
+    "totalBytes": 247218
+  },
+  "verification": {
+    "browser": "Headless Chrome 156 (SwiftShader WebGL)",
+    "viewports": [
+      "1600x1200",
+      "390x844"
+    ],
+    "tabsRendered": 20,
+    "exercisesSolved": 20,
+    "exerciseGradingVerified": true,
+    "srsTimestampsVerified": true,
+    "importExportRoundTripVerified": true,
+    "consoleErrors": 0,
+    "liveDeploymentVerified": true,
+    "liveUrlStatus": 200
+  },
+  "artifacts": [
+    "index.html",
+    "style.css",
+    "script.js",
+    "README.md",
+    "STATE.md",
+    "state.json",
+    "screenshot.png",
+    "screenshot-truss.png",
+    "screenshot-globe.png",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    ".nojekyll",
+    ".gitignore"
+  ],
+  "credits": "Built with OpenCode v2.2.5 and DeepSeek V4.1 Flash (opencode-go/deepseek-v4.1-flash). Three.js r128 and OrbitControls by mrdoob and contributors."
+}
