@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="TrigLab 3D — a 20-tab interactive 3D trigonometry master booklet with real-world engineering simulators, generative exercises, and a file-based spaced repetition system.">
+  <meta name="theme-color" content="#060b16">
+  <meta property="og:title" content="TrigLab 3D · 20-Tab Trigonometry Master Booklet">
+  <meta property="og:description" content="20 interactive Three.js engineering simulators, generative trig exercises, and a portable SRS progress system.">
+  <meta property="og:type" content="website">
+  <title>TrigLab 3D · 20-Tab Trigonometry Master Booklet &amp; SRS Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23060b16'/%3E%3Cpath d='M12 48L32 14l20 34z' fill='none' stroke='%2322d3ee' stroke-width='4'/%3E%3Ccircle cx='32' cy='14' r='4' fill='%23f472b6'/%3E%3C/svg%3E">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <span class="orb orb--cyan"></span>
+    <span class="orb orb--magenta"></span>
+    <span class="orb orb--yellow"></span>
+    <span class="grid-veil"></span>
+  </div>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="TrigLab 3D home">
+        <span class="brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" role="img">
+            <path d="M6 40L24 8l18 32z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+            <path d="M24 8v32" stroke="currentColor" stroke-width="1" stroke-dasharray="3 4" opacity=".55"/>
+            <path d="M24 40a8 8 0 0 0 8-8" fill="none" stroke="#facc15" stroke-width="2"/>
+            <circle cx="24" cy="8" r="3" fill="#f472b6"/>
+            <circle cx="6" cy="40" r="3" fill="#22d3ee"/>
+            <circle cx="42" cy="40" r="3" fill="#22d3ee"/>
+          </svg>
+        </span>
+        <span class="brand__copy">
+          <span class="brand__name">TRIG<span>LAB</span> 3D</span>
+          <span class="brand__sub">20-Tab Master Booklet · SRS Learning Studio</span>
+        </span>
+      </a>
+
+      <div class="global-stats" id="globalStats" aria-live="polite">
+        <div class="stat-pill" title="Tabs mastered">
+          <span class="stat-pill__icon">🟢</span>
+          <span class="stat-pill__value" id="statMastered">0/20</span>
+          <span class="stat-pill__label">Mastered</span>
+        </div>
+        <div class="stat-pill" title="Reviews due today">
+          <span class="stat-pill__icon">🟡</span>
+          <span class="stat-pill__value" id="statDue">0</span>
+          <span class="stat-pill__label">Due</span>
+        </div>
+        <div class="stat-pill" title="Total review completions">
+          <span class="stat-pill__icon">🔁</span>
+          <span class="stat-pill__value" id="statReviews">0</span>
+          <span class="stat-pill__label">Reviews</span>
+        </div>
+        <div class="stat-pill stat-pill--score" title="Learning score">
+          <span class="stat-pill__icon">⚡</span>
+          <span class="stat-pill__value" id="statScore">0</span>
+          <span class="stat-pill__label">Score</span>
+        </div>
+      </div>
+
+      <div class="topbar__status">
+        <span class="live-dot" aria-hidden="true"></span>
+        <span>WebGL · SRS online</span>
+      </div>
+    </header>
+
+    <section class="control-deck" aria-label="Study controls">
+      <div class="deck-progress">
+        <div class="deck-progress__top">
+          <span class="eyebrow">Curriculum mastery</span>
+          <span class="deck-progress__fraction"><strong id="progressPercent">0%</strong> <span id="progressCount">0 of 20 mastered</span></span>
+        </div>
+        <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0" id="progressBar" aria-label="Mastery progress">
+          <span class="progress-fill" id="progressFill"></span>
+        </div>
+        <p class="deck-progress__hint" id="dueHint">Complete an exercise to schedule your first review.</p>
+      </div>
+
+      <div class="deck-actions">
+        <button class="btn btn--due" id="dueFilter" type="button" aria-pressed="false">
+          <span class="btn__icon">🔔</span>
+          <span>Due Today</span>
+          <span class="btn__count" id="dueFilterCount">0</span>
+        </button>
+        <button class="btn" id="saveBtn" type="button">
+          <span class="btn__icon">💾</span>
+          <span>Save Progress File</span>
+        </button>
+        <button class="btn" id="loadBtn" type="button">
+          <span class="btn__icon">📂</span>
+          <span>Load Progress File</span>
+        </button>
+        <input type="file" id="loadInput" accept="application/json,.json" hidden>
+        <button class="btn btn--ghost" id="helpBtn" type="button" title="How this booklet works" aria-label="How this booklet works">?</button>
+        <button class="btn btn--ghost" id="resetBtn" type="button" title="Reset all local progress" aria-label="Reset all local progress">↺</button>
+      </div>
+    </section>
+
+    <nav class="tab-rail" aria-label="Booklet chapters">
+      <button class="rail-arrow" id="railLeft" type="button" aria-label="Scroll chapters left">‹</button>
+      <div class="tab-scroll" id="tabScroll" role="tablist" aria-label="20 trigonometry modules"></div>
+      <button class="rail-arrow" id="railRight" type="button" aria-label="Scroll chapters right">›</button>
+    </nav>
+
+    <div class="due-banner" id="dueBanner" hidden>
+      <span class="due-banner__pulse" aria-hidden="true"></span>
+      <span><strong id="dueBannerCount">0</strong> review<span id="dueBannerPlural">s</span> due now — amber chapters are ready for retrieval practice.</span>
+      <button class="due-banner__jump" id="dueJump" type="button">Jump to next due →</button>
+    </div>
+
+    <main id="moduleHost" class="module-host" aria-live="polite"></main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <span class="footer-mark">△</span>
+        <span>TrigLab 3D · built for retrieval practice, not passive reading.</span>
+      </div>
+      <div class="footer-meta">
+        <span>Engine: <strong>OpenCode</strong></span>
+        <span>Model: <strong>DeepSeek V4.1 Flash</strong></span>
+        <span>3D: <strong>Three.js r128</strong></span>
+        <span class="footer-version">v1.0.0</span>
+      </div>
+    </footer>
+  </div>
+
+  <div class="toast-host" id="toastHost" aria-live="assertive" aria-atomic="true"></div>
+
+  <div class="modal-backdrop" id="modalBackdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal__close" id="modalClose" type="button" aria-label="Close dialog">×</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <div class="boot-screen" id="bootScreen">
+    <div class="boot-card">
+      <div class="boot-symbol" aria-hidden="true">
+        <svg viewBox="0 0 48 48"><path d="M6 40L24 8l18 32z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="24" cy="8" r="3" fill="#f472b6"/></svg>
+      </div>
+      <p class="boot-kicker">Initialising laboratory</p>
+      <h1>TrigLab <span>3D</span></h1>
+      <p class="boot-note" id="bootNote">Loading Three.js and 20 engineering simulators…</p>
+      <div class="boot-bar"><span id="bootBarFill"></span></div>
+      <p class="boot-credit">OpenCode × DeepSeek V4.1 Flash</p>
+    </div>
+  </div>
+
+  <noscript>
+    <div class="noscript">This interactive 3D studio requires JavaScript. Enable it to use the 20 simulators and the SRS engine.</div>
+  </noscript>
+
+  <!-- Three.js r128 + OrbitControls. Deferred scripts execute in document order. -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script defer src="script.js"></script>
+</body>
+</html>
