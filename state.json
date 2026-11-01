@@ -1,21 +1,21 @@
 {
   "project": "3d-trigonometry-master-booklet",
-  "description": "TrigLab 3D — a 20-tab interactive 3D trigonometry master booklet with guided storytelling, plain-English colour keys and formula decoders, engineering simulators, generative drills, and a portable spaced-repetition system.",
+  "description": "TrigLab 3D — a research-informed, 20-tab interactive trigonometry booklet with learning agendas, five-step guided stories, per-control explanations, live coaching, engineering simulators, checkpoint drills, and a portable spaced-repetition system.",
   "build": {
     "startedAt": "2026-10-31T23:31:24.546000Z",
-    "completedAt": "2026-11-01T00:28:20Z",
-    "durationSeconds": 3415,
-    "durationHuman": "56m 55s",
+    "completedAt": "2026-11-01T00:51:34Z",
+    "durationSeconds": 4809,
+    "durationHuman": "1h 20m 9s",
     "timezone": "UTC"
   },
   "tokens": {
-    "input": 451460,
-    "output": 143854,
-    "reasoning": 79299,
-    "cacheRead": 25272320,
+    "input": 597891,
+    "output": 188067,
+    "reasoning": 111948,
+    "cacheRead": 58246912,
     "cacheWrite": 1583,
-    "total": 674613,
-    "totalWithCache": 25948516,
+    "total": 897906,
+    "totalWithCache": 59146401,
     "note": "Snapshot from the OpenCode session record when the project was packaged. total = input + output + reasoning. Cache reads/writes are reported separately because they are a subset of context usage."
   },
   "cost": {
@@ -38,10 +38,17 @@
     "modules": 20,
     "threeScenes": 20,
     "exerciseGenerators": 20,
-    "guidedStoryStepsPerChapter": 3,
-    "guidedStoryStepsTotal": 60,
+    "learningAgendas": 20,
+    "learningObjectives": 60,
+    "guidedStoryStepsPerChapter": 5,
+    "guidedStoryStepsTotal": 100,
     "colourKeyExplainers": 60,
+    "controlGuides": 60,
     "formulaDecoders": 20,
+    "checkpointDrills": 20,
+    "hintLadderLevels": 3,
+    "misconceptionFeedback": 20,
+    "teachBackPrompt": true,
     "narration": "Web Speech API (SpeechSynthesis), opt-in Listen button",
     "firstVisitBriefing": true,
     "srsIntervalsDays": {
@@ -56,6 +63,26 @@
     "backend": false,
     "buildStep": false
   },
+  "pedagogy": {
+    "framework": [
+      "Concrete-Representational-Abstract (CRA)",
+      "Predict-Observe-Explain (POE)",
+      "Cognitive Load Theory and worked examples",
+      "Retrieval practice and spaced review",
+      "Misconception-aware feedback",
+      "Self-explanation / teach-back"
+    ],
+    "references": [
+      "https://www.pattan.net/getmedia/9059e5f0-7edc-4391-8c8e-ebaf8c3c95d6/CRA_Methods0117",
+      "https://www.edutopia.org/article/using-cra-framework-elementary-math/",
+      "https://www.mdpi.com/2673-8392/6/11/242",
+      "https://files.eric.ed.gov/fulltext/EJ1341654.pdf",
+      "https://education.nsw.gov.au/content/dam/main-education/about-us/educational-data/cese/2017-cognitive-load-theory-practice-guide.pdf",
+      "https://www.edutopia.org/video/making-retrieval-practice-a-classroom-routine/",
+      "https://www.gcsu.edu/sites/files/page-assets/node-808/attachments/williams.pdf",
+      "https://sites.unipa.it/grim/AOrhun.PDF"
+    ]
+  },
   "source": {
     "files": {
       "index.html": {
@@ -63,16 +90,16 @@
         "lines": 165
       },
       "style.css": {
-        "bytes": 47220,
-        "lines": 1579
+        "bytes": 54297,
+        "lines": 1800
       },
       "script.js": {
-        "bytes": 265893,
-        "lines": 5716
+        "bytes": 315770,
+        "lines": 6613
       }
     },
-    "totalLines": 7460,
-    "totalBytes": 321608
+    "totalLines": 8578,
+    "totalBytes": 378562
   },
   "verification": {
     "browser": "Headless Chrome 156 (SwiftShader WebGL)",
@@ -81,9 +108,16 @@
       "390x844"
     ],
     "tabsRendered": 20,
-    "guidedStoriesVerified": 20,
+    "learningAgendasVerified": 20,
+    "guidedStoryStepsVerified": 100,
     "colourKeyPopupsVerified": 60,
+    "controlGuidesVerified": 60,
     "formulaDecodersVerified": 20,
+    "checkpointDrillsVerified": 20,
+    "liveCoachVerified": true,
+    "hintLadderVerified": true,
+    "misconceptionFeedbackVerified": true,
+    "teachBackVerified": true,
     "welcomeBriefingVerified": true,
     "exercisesSolved": 20,
     "exerciseGradingVerified": true,
@@ -102,6 +136,8 @@
     "state.json",
     "screenshot.png",
     "screenshot-welcome.png",
+    "screenshot-control.png",
+    "screenshot-checkpoint.png",
     "screenshot-key.png",
     "screenshot-formula.png",
     "screenshot-mobile.png",
@@ -112,5 +148,5 @@
     ".nojekyll",
     ".gitignore"
   ],
-  "credits": "Built with OpenCode v2.2.5 and DeepSeek V4.1 Flash (opencode-go/deepseek-v4.1-flash). Three.js r128 and OrbitControls by mrdoob and contributors."
+  "credits": "Built with OpenCode v2.2.5 and DeepSeek V4.1 Flash (opencode-go/deepseek-v4.1-flash). Three.js r128 and OrbitControls by mrdoob and contributors. Learning design informed by CRA, POE, cognitive load, retrieval practice, and trigonometry misconception research."
 }

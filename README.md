@@ -11,24 +11,52 @@ A static, production-ready trigonometry laboratory built with **vanilla HTML5, C
 TrigLab 3D is a complete 20-chapter trigonometry booklet where each chapter has:
 
 - A **live 3D viewport** with OrbitControls, neon geometry, and a real-world engineering simulator.
-- **Simulator controls** that update the model, HUD readouts, formulas, and the drill in real time.
-- A **generative exercise** with instant grading, a hint, a full worked solution, and review tracking.
+- A **learning agenda** with three measurable objectives and a recommended study sequence.
+- A **five-step guided lesson** with optional read-aloud narration: the job, the scene, the trig idea, the formula in action, and a guided experiment.
+- **Per-control help**: tap the `?` beside any dial to see what it changes, what to watch, and why it is trigonometry. A **live coach** explains the result after every adjustment.
+- A **generative checkpoint** with progressive hints, misconception feedback, a worked solution, and an **explain-it-back** prompt.
 - **SRS metadata** per chapter: status, last reviewed timestamp, review count, and next review due.
 
 The UI uses a dark STEM-laboratory theme with glassmorphism panels, cyan/magenta/yellow signal colours, and a scrollable 20-tab curriculum rail. It is fully responsive and works as a read-only GitHub Pages site.
+
+## Learning design
+
+The lesson structure is deliberately aligned with evidence-based practice:
+
+| Principle | How TrigLab applies it |
+|---|---|
+| **Concrete → Representational → Abstract (CRA)** | Drive a 3D real-world simulator (concrete), read the colour keys/HUD/formula decoder (representational), then solve the symbolic checkpoint (abstract). |
+| **Predict–Observe–Explain (POE)** | The final story step asks for a prediction before moving a control; the live coach explains the observation; the correct-answer **Explain it back** prompt completes the explanation phase. |
+| **Cognitive load & worked examples** | The lesson is chunked into five short steps, controls have just-in-time help, hints progress from concept → formula → first step, and a full worked solution is available after effort. |
+| **Retrieval practice & spacing** | Every chapter ends in a generative checkpoint aligned to objective 3; successful retrieval schedules the next review at 1, 3, 7, or 30 days. |
+| **Misconception-aware feedback** | Wrong answers surface a chapter-specific **Common trap** note, such as swapping sine/cosine or forgetting to normalize an angle. |
+| **Metacognition** | The agenda states the success criteria, and the explain-it-back prompt asks learners to restate the idea in their own words. |
+
+Research consulted:
+
+- [Concrete–Representational–Abstract (CRA) instructional sequence](https://www.pattan.net/getmedia/9059e5f0-7edc-4391-8c8e-ebaf8c3c95d6/CRA_Methods0117) and [Edutopia's CRA overview](https://www.edutopia.org/article/using-cra-framework-elementary-math/).
+- [Predict–Observe–Explain in science education (MDPI)](https://www.mdpi.com/2673-8392/6/11/242) and [an ERIC study of POE instruction](https://files.eric.ed.gov/fulltext/EJ1341654.pdf).
+- [Cognitive load theory in practice (NSW CESE)](https://education.nsw.gov.au/content/dam/main-education/about-us/educational-data/cese/2017-cognitive-load-theory-practice-guide.pdf) and [worked-example research summary](https://www.structural-learning.com/post/cognitive-load-theory-a-teachers-guide).
+- [Retrieval practice as a classroom routine (Edutopia)](https://www.edutopia.org/video/making-retrieval-practice-a-classroom-routine/).
+- [Understandings and misunderstandings of trigonometry (Williams)](https://www.gcsu.edu/sites/files/page-assets/node-808/attachments/williams.pdf) and [students' trigonometry misconceptions (Orhun)](https://sites.unipa.it/grim/AOrhun.PDF).
 
 ## New learner guidance
 
 No prior trigonometry is assumed.
 
-- **Guided story on every chapter** — three short steps explain the real-world job, what the 3D colours mean, and what the formula is doing before you touch a control.
+- **Learning agenda on every chapter** — three objectives state exactly what you should be able to understand, read from the model, and apply. A four-step study sequence shows the most effective order.
+- **Five-step guided story** — the job, what you are looking at, the trig idea in everyday words, the formula in action, and a guided “your turn” experiment.
 - **Read-aloud narration** — the **🔊 Listen** button reads the current story step using the browser's speech synthesis.
 - **Clickable colour keys** — the cyan/magenta/yellow chips in the viewport are buttons. Tap one for a plain-English definition plus what that colour is doing in this simulator. On phones, use the **Colour key** button above the scene.
+- **Control guides and live coach** — tap the `?` beside any control for a plain-English explanation; move it and the live coach tells you what changed and what to watch.
 - **Formula decoder** — tap the formula pill beside the chapter title for a symbol-by-symbol explanation in everyday language.
-- **One-time welcome briefing** — first-time visitors get a short introduction to the story → model → drill loop and the colour language.
-- **Worked solutions and hints** remain available in every drill, so a wrong answer is a learning step rather than a dead end.
+- **Progressive hints and common-trap feedback** — hints move from concept to formula to first step, and wrong answers name the misconception rather than only saying “try again.”
+- **Explain it back** — after a correct checkpoint, restate the idea in your own words and compare with a model answer.
+- **One-time welcome briefing** — first-time visitors get a short introduction to the agenda → story → model → checkpoint loop.
 
-[![Welcome briefing](screenshot-welcome.png)](screenshot-welcome.png) [![Colour key pop-up](screenshot-key.png)](screenshot-key.png)
+[![Learning agenda and guided story](screenshot.png)](screenshot.png) [![Control guide pop-up](screenshot-control.png)](screenshot-control.png)
+
+[![Checkpoint aligned to objective 3](screenshot-checkpoint.png)](screenshot-checkpoint.png)
 
 ## Curriculum map
 
@@ -107,8 +135,10 @@ If the 3D engine cannot load, the drills and SRS still work and a clear fallback
 ├── index.html                 # Shell, header, controls, boot screen, CDN scripts
 ├── style.css                  # Dark STEM design system + responsive layout
 ├── script.js                  # 20 modules, scenes, guided stories, SRS, grading, import/export
-├── screenshot.png             # Chapter 01 — guided story and robotic arm
+├── screenshot.png             # Chapter 01 — agenda, five-step story, live coach
 ├── screenshot-welcome.png     # First-visit learner briefing
+├── screenshot-control.png     # Per-control explanation pop-up
+├── screenshot-checkpoint.png  # Checkpoint aligned to objective 3
 ├── screenshot-key.png         # Plain-English colour-key pop-up
 ├── screenshot-formula.png     # Formula decoder
 ├── screenshot-mobile.png      # Responsive guided-story layout
@@ -131,9 +161,11 @@ If the 3D engine cannot load, the drills and SRS still work and a clear fallback
 
 The shipped build was exercised in headless Chrome across all 20 tabs:
 
-- 20/20 panels render, each with a live WebGL canvas, four HUD chips, simulator controls, a three-step guided story, three colour keys, a formula decoder, and a generated drill.
-- 20/20 colour-key pop-ups and formula decoders open with the correct chapter label and plain-English content.
-- 20/20 generative exercises solved through the real UI; grading, worked solutions, score increments, review counts, status transitions, and next-review timestamps verified.
+- 20/20 panels render with a learning agenda, five-step guided story, live WebGL canvas, HUD, control guides, live coach, and generated checkpoint.
+- 20/20 agendas show three measurable objectives and the recommended study sequence.
+- 100/100 story steps were walked through; 60/60 colour-key pop-ups and 20/20 formula decoders opened with the correct labels and plain-English content.
+- 60/60 control-guide pop-ups were verified, and the live coach updated with the correct observation after real slider changes.
+- 20/20 generative checkpoints solved through the real UI; grading, progressive hints, misconception feedback, explain-it-back, scores, review counts, status transitions, and timestamps were verified.
 - JSON import round-trip verified, including score, badges, due count, and `localStorage` persistence.
 - No uncaught exceptions or console errors.
 - Responsive layout checked at 390 × 844 and 1600 × 1200.

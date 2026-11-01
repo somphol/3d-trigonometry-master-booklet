@@ -1427,6 +1427,754 @@
   const ONBOARD_KEY = "triglab3d.onboarded.v1";
 
   /* ------------------------------------------------------------------------
+     1c. Lesson expansions: the trig idea, a guided experiment, and per-control
+     explanations. storyFor() merges these with the chapter narrative.
+     ------------------------------------------------------------------------ */
+  const LESSONS = {
+    1: {
+      concept: "Standard-position angles and rotation normalization",
+      bigIdea: {
+        title: "The trig idea: an angle is just an amount of turn",
+        text: "Imagine standing at the centre of a clock. Point to 3 o'clock and call that 0°. Turn counter-clockwise to 12 o'clock: that is 90°. Keep turning to 9 o'clock: that is 180°. A full turn brings you back to 0° after 360°. A negative angle simply means you turned clockwise instead.",
+        focus: "the arm's base. Every position of the arm can be described by one angle, even if the arm spun several full circles first.",
+      },
+      tryIt: {
+        title: "Your turn: predict the wrap-around",
+        text: "Set Base yaw to 120°, then to −120°. Before you look at the HUD, predict the standard angle for each. You should get 120° and 240°. The HUD always reports a counter-clockwise angle from 0° to 360°, which is what 'standard position' means.",
+        focus: "the yellow arc and the 'Standard θ' HUD chip. The arc should always agree with the HUD.",
+      },
+      controls: {
+        base: {
+          what: "Rotates the entire arm around its vertical axis. Positive values turn counter-clockwise; negative values turn clockwise.",
+          watch: "The cyan base, yellow angle arc, and 'Standard θ' HUD all move together. The HUD wraps the result into 0°–360°.",
+        },
+        shoulder: {
+          what: "Tilts the upper arm toward or away from the base, changing the arm's vertical reach.",
+          watch: "The magenta elbow rises or falls, and the TCP reach readout changes as the arm extends.",
+        },
+        elbow: {
+          what: "Bends the forearm at the elbow, changing how close the gripper comes to the base.",
+          watch: "The magenta elbow joint and the yellow gripper move; the reach readout responds.",
+        },
+        grip: {
+          what: "Opens or closes the two gripper fingers.",
+          watch: "At 0 the white fingers are wide open; at 1 they pinch together around the crate.",
+        },
+        auto: {
+          what: "Adds a small idle animation without changing the angles you command.",
+          watch: "The gripper light and target beacon pulse, while the HUD stays tied to your slider values.",
+        },
+      },
+    },
+    2: {
+      concept: "Degrees, radians, and angular speed",
+      bigIdea: {
+        title: "The trig idea: two rulers for the same turn",
+        text: "Degrees and radians are two ways to measure rotation, like Celsius and Fahrenheit for temperature. A full circle is 360° or 2π radians. Radians are especially useful because they connect an angle directly to distance travelled around a circle.",
+        focus: "the tire's rim. One full revolution is one circumference of travel and also 2π radians of rotation.",
+      },
+      tryIt: {
+        title: "Your turn: double the revolutions",
+        text: "Leave the radius at 36 cm. Set rpm to 300, note the km/h, then set rpm to 600. Predict the new speed before reading it. It should double, because twice as many revolutions per minute means twice as much road distance per minute.",
+        focus: "the speedometer needle and the 'Linear v' HUD chip. Both should scale in step with rpm.",
+      },
+      controls: {
+        rpm: {
+          what: "Sets how many complete tire revolutions happen each minute.",
+          watch: "The wheel spins faster, the speedometer needle rises, and the km/h readout increases.",
+        },
+        radius: {
+          what: "Sets the tire's size. A larger radius covers more road with each revolution.",
+          watch: "The tire grows; at the same rpm, the linear speed in km/h increases.",
+        },
+        auto: {
+          what: "Turns the wheel animation on or off.",
+          watch: "The tire freezes when off, but the HUD still calculates from the current rpm and radius.",
+        },
+      },
+    },
+    3: {
+      concept: "Tangent as height over distance",
+      bigIdea: {
+        title: "The trig idea: tangent compares height to distance",
+        text: "Tangent is a shortcut for comparing a vertical height with a horizontal distance. If you know how far away a tower is and the angle to its roof, tangent lets you calculate the height without climbing. It is the ratio opposite ÷ adjacent.",
+        focus: "the right triangle formed by the ground distance, the tower height, and the sight line.",
+      },
+      tryIt: {
+        title: "Your turn: use the 45° shortcut",
+        text: "Set the ground distance to 40 m and the clinometer angle to 45°. Predict the height above eye level before checking. tan 45° = 1, so the height above eye level should also be 40 m, plus 1.6 m for your eyes.",
+        focus: "the 'Total height' HUD chip. It should read about 41.6 m at those settings.",
+      },
+      controls: {
+        distance: {
+          what: "Moves you farther from the tower. This distance is the adjacent side of the sight triangle.",
+          watch: "The building looks smaller, the cyan horizontal line grows, and the height estimate changes.",
+        },
+        angle: {
+          what: "Tilts the clinometer sight line up toward the roof.",
+          watch: "The magenta sight line steepens and the yellow arc opens; the height readout grows.",
+        },
+        eye: {
+          what: "Sets the observer's eye height, which is added after the tangent calculation.",
+          watch: "The tripod height and final height estimate shift slightly.",
+        },
+      },
+    },
+    4: {
+      concept: "Sine ratios at a refracting surface",
+      bigIdea: {
+        title: "The trig idea: light bends because its speed changes",
+        text: "When light enters glass or water, it changes speed and bends. The refractive index measures how strongly a material bends light. Snell's law compares the sine of the incoming angle with the sine of the outgoing angle, measured from the normal.",
+        focus: "the dashed normal through the lens. Both light angles are measured from that line, not from the glass surface.",
+      },
+      tryIt: {
+        title: "Your turn: make the ray bend more",
+        text: "Set incidence to 20°, then 60°. Predict whether the refracted ray bends farther from the normal or closer to it. Increasing n₂ should pull the cyan ray toward the dashed normal, and the θ₂ readout should shrink.",
+        focus: "the cyan refracted ray and the 'θ₂ refraction' HUD chip. They should tell the same story.",
+      },
+      controls: {
+        incidence: {
+          what: "Sets the incoming laser angle, measured from the dashed normal.",
+          watch: "The magenta ray tilts, the cyan ray bends, and θ₂ updates in the HUD.",
+        },
+        n2: {
+          what: "Sets how optically dense the lens is. Higher values bend light more strongly.",
+          watch: "The cyan ray pulls toward the normal and the critical-angle readout shrinks.",
+        },
+        medium: {
+          what: "Chooses air or water as the source material, which sets n₁.",
+          watch: "The source label changes and the incidence-to-refraction ratio responds.",
+        },
+      },
+    },
+    5: {
+      concept: "Inverse tangent and slope",
+      bigIdea: {
+        title: "The trig idea: inverse tangent recovers an angle",
+        text: "Inverse tangent answers the question: what angle creates this slope? If you know a ramp's rise and run, arctan gives the incline. This is how inspectors turn measurements into the angle a wheelchair actually experiences.",
+        focus: "the ramp's rise and run. Those two lengths completely determine the incline angle.",
+      },
+      tryIt: {
+        title: "Your turn: test the accessibility limit",
+        text: "Set the incline near 4.8°, then push it to 8°. Predict the safety colour before reading it. The first is close to the 1:12 accessibility guideline; the second should turn yellow or red because the slope is too steep.",
+        focus: "the deck colour and the grade percentage. The colour should match the safety threshold.",
+      },
+      controls: {
+        angle: {
+          what: "Sets the ramp's incline above the ground.",
+          watch: "The deck rotates, the wheelchair tilts, and the colour changes green → yellow → red at safety thresholds.",
+        },
+        auto: {
+          what: "Runs a small roll test along the ramp.",
+          watch: "The wheelchair and wheels move while the slope and safety readout stay driven by the incline.",
+        },
+      },
+    },
+    6: {
+      concept: "Unit-circle coordinates: cosine and sine",
+      bigIdea: {
+        title: "The trig idea: a circle maps every direction",
+        text: "The unit circle is a map of every possible direction. A joystick push has a horizontal part and a vertical part. Cosine is the horizontal coordinate; sine is the vertical coordinate. Together they describe the direction without needing a protractor.",
+        focus: "the cyan and magenta projection lines. They are the two components of the joystick push.",
+      },
+      tryIt: {
+        title: "Your turn: visit the four compass points",
+        text: "Set the angle to 0°, 90°, 180°, and 270°. Before reading the HUD, predict the (cos, sin) pair at each. They should be (1,0), (0,1), (−1,0), and (0,−1) — the four compass points of the unit circle.",
+        focus: "the red point and the sin/cos HUD chips. The projections should collapse or stretch exactly as predicted.",
+      },
+      controls: {
+        angle: {
+          what: "Moves the joystick point around the unit circle.",
+          watch: "The cyan cosine projection, magenta sine projection, yellow tangent, and all three HUD values update.",
+        },
+        auto: {
+          what: "Adds a slow idle pulse to the circle glow.",
+          watch: "The glow breathes, while the active angle stays wherever you set it.",
+        },
+      },
+    },
+    7: {
+      concept: "ASTC signs and reference angles",
+      bigIdea: {
+        title: "The trig idea: the quadrant supplies the sign",
+        text: "ASTC is a sign rule, not a new function. Each quadrant tells you whether sine, cosine, and tangent come out positive or negative. The size of the value comes from the reference angle; the quadrant supplies the plus or minus.",
+        focus: "the target's position relative to the cyan and magenta axes. Those axes decide the signs.",
+      },
+      tryIt: {
+        title: "Your turn: track cosine around the circle",
+        text: "Set the bearing to 40°, 140°, 220°, and 320°. Predict the quadrant and the sign of cosine at each. The quadrants are I, II, III, IV, and cosine should be positive, negative, negative, positive.",
+        focus: "the 'Quadrant' and 'Sine sign' HUD chips. The target's position should explain the sign.",
+      },
+      controls: {
+        angle: {
+          what: "Moves the target around the radar by bearing.",
+          watch: "The amber blip crosses quadrants; the quadrant, reference angle, and sign readouts change.",
+        },
+        radius: {
+          what: "Moves the target closer to or farther from the station.",
+          watch: "The blip slides along its bearing and the range readout changes.",
+        },
+        sweep: {
+          what: "Turns the rotating radar sweep on or off.",
+          watch: "The wedge either spins continuously or locks to the target bearing.",
+        },
+      },
+    },
+    8: {
+      concept: "Special right-triangle ratios",
+      bigIdea: {
+        title: "The trig idea: some triangles have memorisable ratios",
+        text: "Some right triangles have side ratios you can memorise. A 30-60-90 triangle is 1 : √3 : 2. A 45-45-90 triangle is 1 : 1 : √2. These ratios let carpenters calculate rafters and rises without measuring every diagonal.",
+        focus: "the two halves of the gable. Each half is a right triangle with the rafter as its hypotenuse.",
+      },
+      tryIt: {
+        title: "Your turn: check the 45° roof shortcut",
+        text: "Set the pitch to 45° and read the rise and rafter lengths. For a 45° roof, the rise should equal the half-span and the rafter should be half-span × √2. Change the span and see the same ratio hold.",
+        focus: "the 'Rise' and 'Rafter' HUD chips. Their ratio should stay constant at 45°.",
+      },
+      controls: {
+        span: {
+          what: "Sets the building width, which fixes the half-span adjacent side.",
+          watch: "The truss widens; rise and rafter lengths update for the same pitch.",
+        },
+        pitch: {
+          what: "Sets the roof angle above horizontal.",
+          watch: "The ridge rises, rafters lengthen, and the truss rebuilds in real time.",
+        },
+        auto: {
+          what: "Shows the ratio overlay.",
+          watch: "The dashed measuring lines stay visible while the truss itself follows span and pitch.",
+        },
+      },
+    },
+    9: {
+      concept: "Sine waves from rotation",
+      bigIdea: {
+        title: "The trig idea: a spinning coil draws a sine wave",
+        text: "A spinning coil produces a voltage that rises and falls like a sine wave. The coil's angle controls its vertical projection, which is the instantaneous voltage. Frequency controls how quickly the wave repeats, not how tall it is.",
+        focus: "the rotating magenta coil and the waveform. One full coil turn should produce one full wave cycle.",
+      },
+      tryIt: {
+        title: "Your turn: squeeze the wave",
+        text: "Set frequency to 50 Hz, then 60 Hz. Predict what happens to the period. Higher frequency means a shorter period, so the wave should squeeze tighter and the period HUD should drop from 20 ms to about 16.7 ms.",
+        focus: "the 'Period' HUD chip and the spacing of the waves. They should shrink together.",
+      },
+      controls: {
+        peak: {
+          what: "Sets the tallest voltage the generator can produce.",
+          watch: "The magenta waveform grows taller; V peak and V RMS update.",
+        },
+        freq: {
+          what: "Sets how many voltage cycles happen per second.",
+          watch: "The wave squeezes tighter, the coil spins faster, and the period readout shrinks.",
+        },
+        auto: {
+          what: "Spins the coil automatically.",
+          watch: "The coil rotates and the waveform scrolls; turning it off freezes the animation but keeps the values.",
+        },
+      },
+    },
+    10: {
+      concept: "Cosine motion and period",
+      bigIdea: {
+        title: "The trig idea: a pendulum traces a cosine",
+        text: "A pendulum's back-and-forth motion traces a cosine wave over time. Its horizontal position is the sine of the swing angle multiplied by the rod length. Longer pendulums swing more slowly than short ones.",
+        focus: "the bob's shadow and the cosine trace. The shadow is the horizontal position; the trace unrolls it over time.",
+      },
+      tryIt: {
+        title: "Your turn: double the period",
+        text: "Set the length to 1 m, then 4 m. Predict the period. Period grows with √L, so quadrupling the length should roughly double the period — from about 2.0 s to about 4.0 s.",
+        focus: "the 'Period T' HUD chip. It should change by a factor of about two, not four.",
+      },
+      controls: {
+        length: {
+          what: "Sets the distance from pivot to bob.",
+          watch: "The rod and bob move; the period readout changes with √L.",
+        },
+        amplitude: {
+          what: "Sets how far the pendulum swings from vertical.",
+          watch: "The arc widens, horizontal displacement grows, and the cosine trace gets taller.",
+        },
+        auto: {
+          what: "Starts or stops the swing.",
+          watch: "The bob freezes at the current angle while the trace and period stay based on the sliders.",
+        },
+      },
+    },
+    11: {
+      concept: "Tangent growth and asymptotes",
+      bigIdea: {
+        title: "The trig idea: tangent can run away to infinity",
+        text: "Tangent grows without limit as an angle approaches 90°. A lighthouse beam that becomes almost vertical has to travel farther and farther to reach a fixed shoreline. At exactly 90°, it never meets the shore, so tangent is undefined there.",
+        focus: "the beam and the dashed vertical asymptote. The beam gets steeper as the shoreline distance shrinks.",
+      },
+      tryIt: {
+        title: "Your turn: shrink the distance",
+        text: "Set the shore distance to 280 m, then to 60 m. Predict the depression angle. Shorter distance means a steeper beam, so the angle should increase toward 90°, and the beam length should grow rapidly.",
+        focus: "the 'Depression θ' and 'Beam length' HUD chips. Both should respond strongly to distance.",
+      },
+      controls: {
+        height: {
+          what: "Sets the lighthouse lamp height above the water.",
+          watch: "The tower stretches and the depression angle increases for a fixed shore distance.",
+        },
+        distance: {
+          what: "Sets how far the shoreline is from the tower.",
+          watch: "The boat and shoreline move; the angle shrinks as distance grows.",
+        },
+        auto: {
+          what: "Rotates the beacon flare.",
+          watch: "The lamp pulses and the beam cone sweeps while the measured tangent values stay tied to height and distance.",
+        },
+      },
+    },
+    12: {
+      concept: "Amplitude, period, and wavelength",
+      bigIdea: {
+        title: "The trig idea: frequency and period are reciprocals",
+        text: "Frequency and period are reciprocals: high frequency means a short period. Radio wavelength is the distance one cycle travels, so higher frequency also means a shorter wavelength. AM and FM live in different frequency neighbourhoods.",
+        focus: "the wavefront rings leaving the antenna. Higher frequency packs the cycles closer together.",
+      },
+      tryIt: {
+        title: "Your turn: tune to a higher station",
+        text: "Tune from 98.7 MHz to 105.0 MHz. Predict the wavelength. It should get shorter, because λ = 300/f and a larger denominator gives a smaller result. Watch the period shrink too.",
+        focus: "the 'Wavelength' and 'Period' HUD chips. Both should decrease as frequency rises.",
+      },
+      controls: {
+        frequency: {
+          what: "Sets the carrier frequency in MHz.",
+          watch: "Wavefronts expand faster, the wave tightens, and period/wavelength shrink.",
+        },
+        amplitude: {
+          what: "Sets the carrier signal height.",
+          watch: "The magenta wave grows taller without changing its frequency.",
+        },
+        band: {
+          what: "Chooses the AM or FM radio band.",
+          watch: "The receiver light changes colour and the band-check HUD reports whether the frequency is in range.",
+        },
+      },
+    },
+    13: {
+      concept: "Phase and superposition",
+      bigIdea: {
+        title: "The trig idea: opposite waves can cancel",
+        text: "Two waves can cancel when their peaks meet troughs. That is destructive interference, and phase controls the timing. A 180° offset gives perfect cancellation for equal waves; 0° makes them add and double.",
+        focus: "the three waves. Magenta is noise, cyan is anti-noise, and green is what remains after adding them.",
+      },
+      tryIt: {
+        title: "Your turn: find silence",
+        text: "Set phase to 180°, then to 90°. Predict the cancellation percentage. At 180° it should be 100%; at 90° the resultant should be about 70.7% of the original combined amplitude. Find the phase that flattens the green wave.",
+        focus: "the green resultant and cancellation meter. Flat green means silence; tall green means reinforcement.",
+      },
+      controls: {
+        phase: {
+          what: "Offsets the anti-noise wave in time relative to the noise.",
+          watch: "The cyan wave slides; the green resultant shrinks at 180° and grows at 0°/360°.",
+        },
+        amplitude: {
+          what: "Sets how tall both original waves are.",
+          watch: "Noise and anti-noise grow together; the resultant and cancellation percentage scale.",
+        },
+        auto: {
+          what: "Animates the waves travelling through the cabin.",
+          watch: "The wave shapes slide sideways while phase and cancellation stay tied to your sliders.",
+        },
+      },
+    },
+    14: {
+      concept: "Law of sines",
+      bigIdea: {
+        title: "The trig idea: pair each side with its opposite angle",
+        text: "The law of sines lets you solve a triangle when you know two angles and one side. Surveyors use it to find distances across rivers or valleys they cannot measure directly. Every side is paired with the angle opposite it.",
+        focus: "the baseline and the two sightlines. Each side sits across from one of the triangle's angles.",
+      },
+      tryIt: {
+        title: "Your turn: complete the triangle",
+        text: "Set A = 50°, B = 60°, and baseline 100 m. Predict angle C. It should be 70° because triangle angles sum to 180°. Then watch the river width update from the law of sines.",
+        focus: "the 'Angle C' and 'River width' HUD chips. The triangle geometry should explain both numbers.",
+      },
+      controls: {
+        baseline: {
+          what: "Sets the measured distance between the two survey poles.",
+          watch: "The cyan baseline lengthens; the triangle and river-width readout update.",
+        },
+        angleA: {
+          what: "Sets the sight angle from the left pole to the landmark.",
+          watch: "The yellow sightline rotates; angle C and the width change.",
+        },
+        angleB: {
+          what: "Sets the sight angle from the right pole.",
+          watch: "The magenta sightline rotates; the triangle reshapes and angle C adjusts.",
+        },
+      },
+    },
+    15: {
+      concept: "The ambiguous SSA case",
+      bigIdea: {
+        title: "The trig idea: some data fits more than one triangle",
+        text: "The ambiguous case happens when two sides and a non-included angle can fit more than one triangle. A dashed circle helps you count the possibilities. Sometimes there is no triangle, sometimes one, sometimes two.",
+        focus: "the dashed circle around the distress vessel. Each intersection with the bearing line is a possible intercept.",
+      },
+      tryIt: {
+        title: "Your turn: create a second intercept",
+        text: "Set a = 5, b = 10, A = 30°. Predict the number of solutions. The altitude is h = 5, so a equals h and there should be exactly one right triangle. Increase a slightly to create two.",
+        focus: "the 'Solutions' HUD chip and the course lines. The count should match the circle intersections.",
+      },
+      controls: {
+        a: {
+          what: "Sets the interceptor's range from the station.",
+          watch: "The dashed possibility circle changes size, which can create or remove intercept triangles.",
+        },
+        b: {
+          what: "Sets the distress vessel's distance along its bearing.",
+          watch: "The vessel moves outward; altitude h and the solution count update.",
+        },
+        angleA: {
+          what: "Sets the bearing angle between the baseline and the distress line.",
+          watch: "The bearing line rotates; h, a-vs-h, and the number of possible courses change.",
+        },
+      },
+    },
+    16: {
+      concept: "Law of cosines",
+      bigIdea: {
+        title: "The trig idea: Pythagoras for non-right triangles",
+        text: "The law of cosines extends Pythagoras to triangles without a right angle. It combines two sides and the angle between them to find the closing side. When the angle is 90°, the cosine term disappears and you get Pythagoras back.",
+        focus: "the two flight legs and the magenta closing side. The included angle sits between the legs.",
+      },
+      tryIt: {
+        title: "Your turn: turn it into Pythagoras",
+        text: "Set the included angle to 90° and read the closing distance. It should match √(a² + b²). Then increase the angle past 90° and watch the closing side grow longer.",
+        focus: "the 'Closing side c' HUD chip. At 90° it should agree with a right-triangle calculation.",
+      },
+      controls: {
+        legA: {
+          what: "Sets the length of the first flight leg.",
+          watch: "The cyan route extends; the closing magenta side and ground-distance readout change.",
+        },
+        legB: {
+          what: "Sets the length of the second leg.",
+          watch: "The yellow route extends and the aircraft path reshapes.",
+        },
+        angle: {
+          what: "Sets the included angle between the two legs at the airport.",
+          watch: "The yellow leg swings; the magenta closing side and law-of-cosines result change.",
+        },
+        auto: {
+          what: "Animates the aircraft along the route.",
+          watch: "Planes travel the legs while the triangle and distance stay controlled by the sliders.",
+        },
+      },
+    },
+    17: {
+      concept: "The Pythagorean identity",
+      bigIdea: {
+        title: "The trig idea: sine and cosine are Pythagoras in disguise",
+        text: "A unit normal must have length 1 so lighting calculations stay stable. On the unit circle, sine and cosine are the two legs of a right triangle with hypotenuse 1. Pythagoras then guarantees sin²θ + cos²θ = 1.",
+        focus: "the small triangle on the left panel. Its legs are the same two components as the normal arrow.",
+      },
+      tryIt: {
+        title: "Your turn: reconstruct cosine",
+        text: "Set sin θ to 0.6. Predict cos θ. It should be 0.8 because 0.36 + 0.64 = 1. Then check that the identity readout stays at 1.0000 while the normal changes direction.",
+        focus: "the 'Identity' HUD chip. It should remain exactly 1 no matter where you drag sin θ.",
+      },
+      controls: {
+        sinValue: {
+          what: "Sets the vertical component of the unit normal.",
+          watch: "The magenta normal arrow tilts; cosine and tangent are recalculated while the identity stays 1.",
+        },
+        light: {
+          what: "Moves the orbiting light around the sphere.",
+          watch: "The highlight travels across the surface while the normal and identity triangle stay fixed to sin θ.",
+        },
+      },
+    },
+    18: {
+      concept: "Double-angle range",
+      bigIdea: {
+        title: "The trig idea: the best launch angle is 45°",
+        text: "A projectile follows a parabola because gravity pulls down while horizontal speed stays steady. The range depends on sin 2θ, which peaks at 45°. That is why 45° is the classic maximum-range angle.",
+        focus: "the yellow parabola and the target ring. The target should reach farthest near 45°.",
+      },
+      tryIt: {
+        title: "Your turn: prove the symmetric angles",
+        text: "Set the angle to 30°, note the range, then set 60°. Predict what happens. The ranges should match because sin 60° = sin 120°. Then try 45° to find the maximum.",
+        focus: "the 'Range R' HUD chip and target ring. The two mirrored angles should land in the same place.",
+      },
+      controls: {
+        speed: {
+          what: "Sets the cannon's muzzle speed.",
+          watch: "The yellow trajectory lengthens; range, height, and flight time increase.",
+        },
+        angle: {
+          what: "Sets the launch angle above horizontal.",
+          watch: "The barrel tilts and the parabola reshapes; range peaks near 45°.",
+        },
+        auto: {
+          what: "Fires the projectile animation.",
+          watch: "The magenta ball travels the arc while the trajectory and target ring stay tied to speed and angle.",
+        },
+      },
+    },
+    19: {
+      concept: "Cross product and perpendicularity",
+      bigIdea: {
+        title: "The trig idea: the cross product measures perpendicularity",
+        text: "The cross product creates a vector perpendicular to two directions. Its length depends on the sine of the angle between them, so it is largest at 90° and zero when they align. Solar trackers use this geometry to face the panel normal at the sun.",
+        focus: "the yellow cross-product arrow. It is perpendicular to the panel edge and the sun direction.",
+      },
+      tryIt: {
+        title: "Your turn: align the panel",
+        text: "Set the sun azimuth equal to the panel azimuth. Predict the cross-product magnitude. It should be near zero because the vectors align. Then move the sun 90° away and watch the yellow arrow grow.",
+        focus: "the '|a × b|' and 'Panel output' HUD chips. Alignment raises output but lowers the cross product.",
+      },
+      controls: {
+        azimuth: {
+          what: "Moves the sun around the horizon.",
+          watch: "The yellow sun orbits; the incidence and output readouts change.",
+        },
+        elevation: {
+          what: "Lifts the sun higher or lower in the sky.",
+          watch: "The sun rises or sets; the panel tilts toward it and output changes.",
+        },
+        panelAz: {
+          what: "Rotates the panel's aiming direction around the vertical axis.",
+          watch: "The panel and magenta normal turn; the cross-product arrow and output ring respond.",
+        },
+      },
+    },
+    20: {
+      concept: "Spherical to Cartesian coordinates",
+      bigIdea: {
+        title: "The trig idea: two angles and a distance locate anything on a sphere",
+        text: "Latitude, longitude, and radius are spherical coordinates: two angles and one distance. Converting them to x, y, z lets a 3D engine draw the point. Latitude controls height, longitude spins around the planet, and radius sets distance from Earth's centre.",
+        focus: "the yellow radius vector. It points from Earth's centre to the surface location.",
+      },
+      tryIt: {
+        title: "Your turn: find the equator",
+        text: "Set latitude to 0°, longitude to 0°, and read the coordinates. The point should lie on the equator with y = 0. Then move longitude to 90° and predict which coordinate swaps.",
+        focus: "the x, y, z HUD chips. At the equator, y should be zero no matter the longitude.",
+      },
+      controls: {
+        lat: {
+          what: "Moves the location pin north or south of the equator.",
+          watch: "The pin slides up or down the globe; the y-coordinate and radius vector change.",
+        },
+        lon: {
+          what: "Moves the pin east or west around the planet.",
+          watch: "The pin circles the globe; x and z trade places smoothly as longitude changes.",
+        },
+        altitude: {
+          what: "Lifts the satellite higher above the surface.",
+          watch: "The dashed beam lengthens; radius and x/y/z grow while the surface pin stays fixed.",
+        },
+      },
+    },
+  };
+
+  const STORY_CACHE = new Map();
+
+  /* ------------------------------------------------------------------------
+     1d. Learning agendas: three measurable objectives per chapter. Objective 3
+     is the checkpoint that the generative drill verifies.
+     ------------------------------------------------------------------------ */
+  const AGENDAS = {
+    1: {
+      objectives: [
+        "Explain why any rotation can be reduced to one angle between 0° and 360°.",
+        "Read the commanded angle from the yellow arc and the Standard θ HUD.",
+        "Normalize a positive or negative arm rotation into standard position.",
+      ],
+      checkpoint: "Normalize a signed arm rotation into standard position.",
+    },
+    2: {
+      objectives: [
+        "Distinguish degrees from radians as two measures of the same turn.",
+        "Connect rpm, angular velocity, tire radius, and linear speed.",
+        "Convert a tire's rpm and radius into km/h.",
+      ],
+      checkpoint: "Calculate linear speed from rpm and tire radius.",
+    },
+    3: {
+      objectives: [
+        "Identify the opposite and adjacent sides of the sight triangle.",
+        "Use tan θ = opposite ÷ adjacent and add eye height.",
+        "Estimate a building height from distance and clinometer angle.",
+      ],
+      checkpoint: "Estimate height from a clinometer angle and ground distance.",
+    },
+    4: {
+      objectives: [
+        "Explain refraction and measure both light angles from the normal.",
+        "Apply n₁ sin θ₁ = n₂ sin θ₂ to a lens interface.",
+        "Predict whether a ray bends toward the normal or undergoes total internal reflection.",
+      ],
+      checkpoint: "Calculate the refracted angle for a given incidence angle.",
+    },
+    5: {
+      objectives: [
+        "Explain inverse tangent as the angle that produces a slope.",
+        "Read rise and run from the ramp model.",
+        "Compute an incline angle and compare it to the 4.8° guideline.",
+      ],
+      checkpoint: "Compute and judge a ramp incline from rise and run.",
+    },
+    6: {
+      objectives: [
+        "Define cosine and sine as the x and y coordinates on the unit circle.",
+        "Read the cyan and magenta projections and the sign of each component.",
+        "Compute sin, cos, and tan for a joystick angle.",
+      ],
+      checkpoint: "Evaluate sin, cos, or tan at a given angle.",
+    },
+    7: {
+      objectives: [
+        "State the ASTC sign rule for each quadrant.",
+        "Find a reference angle from a bearing.",
+        "Determine the sign of a trig function without a calculator.",
+      ],
+      checkpoint: "Classify the sign of a trig function by quadrant.",
+    },
+    8: {
+      objectives: [
+        "Recall the 1 : √3 : 2 and 1 : 1 : √2 side ratios.",
+        "Identify the rafter as the hypotenuse of the roof triangle.",
+        "Use special-triangle ratios to find a missing roof length.",
+      ],
+      checkpoint: "Find a missing side in a 30-60-90 or 45-45-90 triangle.",
+    },
+    9: {
+      objectives: [
+        "Explain how a rotating coil produces a sine wave.",
+        "Relate peak voltage, RMS voltage, frequency, and period.",
+        "Evaluate an instantaneous AC voltage from Vp, f, and t.",
+      ],
+      checkpoint: "Calculate instantaneous voltage from a sine-wave formula.",
+    },
+    10: {
+      objectives: [
+        "Explain why pendulum motion traces a cosine.",
+        "Relate pendulum length to period.",
+        "Compute horizontal displacement from length and angle.",
+      ],
+      checkpoint: "Compute pendulum displacement and period from the model.",
+    },
+    11: {
+      objectives: [
+        "Explain why tangent grows without bound near 90°.",
+        "Identify the vertical asymptote on the beam model.",
+        "Compute a depression angle from height and distance.",
+      ],
+      checkpoint: "Calculate a tangent-based angle and interpret the asymptote.",
+    },
+    12: {
+      objectives: [
+        "Distinguish amplitude, period, frequency, and wavelength.",
+        "Use period = 1/f and wavelength = 300/f.",
+        "Compare AM and FM frequency bands.",
+      ],
+      checkpoint: "Compute wavelength or period from a carrier frequency.",
+    },
+    13: {
+      objectives: [
+        "Explain constructive and destructive interference.",
+        "Interpret phase offset as a timing shift.",
+        "Compute resultant amplitude from 2A|cos(φ/2)|.",
+      ],
+      checkpoint: "Calculate the resultant of two phase-shifted waves.",
+    },
+    14: {
+      objectives: [
+        "State the law of sines and pair each side with its opposite angle.",
+        "Use a baseline and two angles to solve a survey triangle.",
+        "Compute an inaccessible river width.",
+      ],
+      checkpoint: "Solve a triangle and find an inaccessible width with the law of sines.",
+    },
+    15: {
+      objectives: [
+        "Explain why SSA can produce zero, one, or two triangles.",
+        "Compute the altitude h = b sin A and compare it with a and b.",
+        "Count the valid intercept triangles.",
+      ],
+      checkpoint: "Determine the number of SSA solutions from a, b, and A.",
+    },
+    16: {
+      objectives: [
+        "Explain how the law of cosines generalizes Pythagoras.",
+        "Identify the included angle between two sides.",
+        "Compute a closing distance from two legs and an included angle.",
+      ],
+      checkpoint: "Find a non-right triangle's closing side with the law of cosines.",
+    },
+    17: {
+      objectives: [
+        "Explain why a unit normal has length 1.",
+        "Relate sin²θ + cos²θ = 1 to a right triangle.",
+        "Recover cosine from sine using the Pythagorean identity.",
+      ],
+      checkpoint: "Use sin²θ + cos²θ = 1 to find a missing component.",
+    },
+    18: {
+      objectives: [
+        "Explain why range peaks at 45° using sin 2θ.",
+        "Relate speed, angle, range, and maximum height.",
+        "Predict and compute projectile range.",
+      ],
+      checkpoint: "Compute projectile range and explain the 45° optimum.",
+    },
+    19: {
+      objectives: [
+        "Explain what a cross product produces geometrically.",
+        "Relate cross-product magnitude to sin θ.",
+        "Use alignment and perpendicularity to reason about solar output.",
+      ],
+      checkpoint: "Compute or interpret a cross-product magnitude for alignment.",
+    },
+    20: {
+      objectives: [
+        "Explain latitude, longitude, and radius as spherical coordinates.",
+        "Convert spherical coordinates to x, y, z.",
+        "Predict how changing latitude or longitude moves the point.",
+      ],
+      checkpoint: "Convert a spherical location into Cartesian coordinates.",
+    },
+  };
+
+  const MISCONCEPTIONS = {
+    1: "Adding the starting angle and rotation but forgetting to wrap the result back into 0°–360°. A negative final value is not a standard-position angle.",
+    2: "Using degrees in the radian formula, or forgetting to convert the tire radius from centimetres to metres.",
+    3: "Multiplying by tan θ but forgetting to add eye height, or using sine when the question asks for tangent.",
+    4: "Measuring the incidence and refraction angles from the glass surface instead of from the normal.",
+    5: "Using rise ÷ ramp length (sine) when the inspector needs rise ÷ run (tangent).",
+    6: "Swapping sine and cosine: cosine is the x-coordinate; sine is the y-coordinate.",
+    7: "Assuming a value is positive because the reference angle is positive. The quadrant supplies the sign.",
+    8: "Using the wrong special ratio, such as √2 for the long leg of a 30-60-90 triangle.",
+    9: "Confusing RMS with peak voltage. RMS is peak ÷ √2, not the peak itself.",
+    10: "Mixing length and swing amplitude, or forgetting that the period formula uses the rod length.",
+    11: "Treating tangent as a length rather than a ratio, or expecting a finite value at exactly 90°.",
+    12: "Confusing frequency with period, or forgetting the 300/f shortcut when f is in MHz.",
+    13: "Adding amplitudes instead of combining phase. Equal waves at 180° cancel rather than double.",
+    14: "Pairing a side with the wrong angle. Each side belongs with the angle opposite it.",
+    15: "Assuming a > h always means two triangles. If a ≥ b there is only one.",
+    16: "Using the wrong included angle, or dropping the minus sign before 2ab cos C.",
+    17: "Taking the negative square root in Quadrant I, or swapping sine and cosine components.",
+    18: "Assuming 45° always maximises range. It is the level-ground optimum; height changes the answer.",
+    19: "Thinking the cross product is largest when vectors align. It is zero when aligned and largest at 90°.",
+    20: "Swapping latitude and longitude, or using altitude as the radius without adding Earth's radius.",
+  };
+
+  function storyFor(id) {
+    if (STORY_CACHE.has(id)) return STORY_CACHE.get(id);
+    const base = NARRATIVES[id];
+    const extra = LESSONS[id];
+    const merged = base && extra ? [base.story[0], base.story[1], extra.bigIdea, base.story[2], extra.tryIt] : base ? base.story : [];
+    STORY_CACHE.set(id, merged);
+    return merged;
+  }
+
+  /* ------------------------------------------------------------------------
      2. Generative exercises — one distinct generator per module
      Every generator returns a fresh problem with a worked solution.
      ------------------------------------------------------------------------ */
@@ -4318,6 +5066,7 @@
   const exercises = {};
   const choices = {};
   const attempts = {};
+  const hints = {};
   const storyStep = {};
   let activeTab = 1;
   let dueMode = false;
@@ -4563,11 +5312,14 @@
       stopStorySpeech();
       return;
     }
-    const narr = NARRATIVES[id];
-    if (!narr) return;
+    const story = storyFor(id);
+    if (!story.length) return;
     stopStorySpeech();
-    const step = narr.story[storyStep[id] || 0];
-    const utter = new SpeechSynthesisUtterance(`${step.title}. ${step.text} Look for ${step.focus}`);
+    const stepIndex = storyStep[id] || 0;
+    const step = story[stepIndex];
+    const lesson = LESSONS[id] || {};
+    const concept = stepIndex === 0 && lesson.concept ? ` Trig focus: ${lesson.concept}.` : "";
+    const utter = new SpeechSynthesisUtterance(`Step ${stepIndex + 1} of ${story.length}. ${step.title}. ${step.text} Look for ${step.focus}.${concept}`);
     utter.rate = 0.93;
     utter.pitch = 1;
     utter.lang = "en-US";
@@ -4595,14 +5347,14 @@
   }
 
   function setStoryStep(id, index, animate = true) {
-    const narr = NARRATIVES[id];
+    const story = storyFor(id);
     const panel = $(`[data-narrator="${id}"]`);
-    if (!narr || !panel) return;
+    if (!story.length || !panel) return;
     if (speechModule === id) stopStorySpeech();
-    const total = narr.story.length;
+    const total = story.length;
     const idx = clamp(Number(index) || 0, 0, total - 1);
     storyStep[id] = idx;
-    const step = narr.story[idx];
+    const step = story[idx];
     const el = panel.querySelector("[data-story-title]");
     if (el) el.textContent = step.title;
     const text = panel.querySelector("[data-story-text]");
@@ -4611,6 +5363,8 @@
     if (focus) focus.textContent = step.focus;
     const count = panel.querySelector("[data-story-count]");
     if (count) count.textContent = `${idx + 1} / ${total}`;
+    const stage = panel.querySelector("[data-story-stage]");
+    if (stage) stage.textContent = ["The job", "The scene", "The trig idea", "The formula", "Your turn"][idx] || `Step ${idx + 1}`;
     panel.querySelectorAll("[data-story-step]").forEach((dot) => {
       const on = Number(dot.dataset.storyStep) === idx;
       dot.classList.toggle("is-active", on);
@@ -4682,8 +5436,63 @@
     `);
   }
 
+  function openControlHelp(id, key) {
+    const meta = MODULES[id - 1];
+    const ctrl = meta && meta.controls.find((c) => c.key === key);
+    const lesson = LESSONS[id] || {};
+    const guide = (lesson.controls && lesson.controls[key]) || {
+      what: `Changes the ${ctrl ? ctrl.label : key} value in the simulator.`,
+      watch: "Watch the 3D model and the HUD readouts respond.",
+    };
+    if (!ctrl) return;
+    openModal(`
+      <p class="modal-kicker">Control guide · Chapter ${String(id).padStart(2, "0")}</p>
+      <h2>${escapeHtml(ctrl.label)}</h2>
+      <div class="control-now"><span>Current value</span><strong>${escapeHtml(formatControlValue(meta, ctrl))}</strong></div>
+      <h3>What this control changes</h3>
+      <p>${escapeHtml(guide.what)}</p>
+      <h3>What to watch</h3>
+      <p>${escapeHtml(guide.watch)}</p>
+      <h3>Why it is trigonometry</h3>
+      <p>This dial is part of the chapter's trig focus: <strong>${escapeHtml(lesson.concept || meta.title)}</strong>. The number you change and the visual response are two views of the same relationship.</p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" type="button" data-modal="close">Back to the controls</button>
+        <button class="btn" type="button" data-story-jump="${id}">Read the lesson again</button>
+      </div>
+    `);
+  }
+
+  function formatControlValue(meta, ctrl) {
+    const value = simStates[meta.id][ctrl.key];
+    if (ctrl.type === "toggle") return value ? "On" : "Off";
+    if (ctrl.type === "select") {
+      const option = ctrl.options.find((o) => o.value === value);
+      return option ? option.label : String(value);
+    }
+    const step = Number(ctrl.step);
+    const decimals = step < 0.1 ? 2 : step < 1 ? 1 : 0;
+    return `${Number(value).toFixed(decimals)}${ctrl.unit || ""}`;
+  }
+
+  function updateLiveCoach(id, key) {
+    const meta = MODULES[id - 1];
+    const el = $(`[data-coach-text="${id}"]`);
+    if (!meta || !el) return;
+    const ctrl = meta.controls.find((c) => c.key === key);
+    const lesson = LESSONS[id] || {};
+    const guide = lesson.controls && lesson.controls[key];
+    if (!ctrl) return;
+    const value = formatControlValue(meta, ctrl);
+    if (!guide) {
+      el.innerHTML = `<strong>${escapeHtml(ctrl.label)} = ${escapeHtml(value)}.</strong> Watch the 3D model and the HUD update together.`;
+      return;
+    }
+    el.innerHTML = `<strong>${escapeHtml(ctrl.label)} = ${escapeHtml(value)}.</strong> ${escapeHtml(guide.watch)} <span class="live-coach__trig">Trig focus: ${escapeHtml(lesson.concept || meta.title)}.</span>`;
+  }
+
   function openFormula(meta) {
     const narr = NARRATIVES[meta.id];
+    const story = storyFor(meta.id);
     const math = narr ? narr.math : meta.note;
     const parts = narr && narr.mathParts ? narr.mathParts : [];
     const rows = parts
@@ -4696,7 +5505,7 @@
       <p>${escapeHtml(math)}</p>
       ${rows ? `<h3>What each symbol means</h3><table class="formula-table"><thead><tr><th>Symbol</th><th>Plain English</th></tr></thead><tbody>${rows}</tbody></table>` : ""}
       <h3>Then look for</h3>
-      <p>${escapeHtml((narr && narr.story[2] && narr.story[2].focus) || meta.note)}</p>
+      <p>${escapeHtml((story[3] && story[3].focus) || meta.note)}</p>
       <div class="modal-actions">
         <button class="btn btn-primary" type="button" data-modal="close">Got it</button>
         <button class="btn" type="button" data-story-jump="${meta.id}">Show me in the 3D scene</button>
@@ -4709,11 +5518,11 @@
       <div data-welcome="1">
         <p class="modal-kicker">New learner briefing</p>
         <h2>Welcome to TrigLab 3D</h2>
-        <p>You are the new engineer in a virtual STEM lab. Each chapter gives you a story, a live machine, and a short drill. You do not need to know trigonometry yet — the narrator explains every symbol before you use it.</p>
+        <p>You are the new engineer in a virtual STEM lab. Each chapter gives you a learning agenda, a five-step lesson, a live machine, and a checkpoint drill. You do not need to know trigonometry yet — the narrator explains every symbol before you use it.</p>
         <div class="welcome-grid">
-          <div class="welcome-step"><span>1</span><h3>Read the story</h3><p>Three short steps explain the real-world job, what the colours mean, and what the maths is doing.</p></div>
-          <div class="welcome-step"><span>2</span><h3>Play with the model</h3><p>Move the sliders. Watch the HUD, the formula, and the 3D scene respond together.</p></div>
-          <div class="welcome-step"><span>3</span><h3>Prove it</h3><p>Solve the generated drill. A correct answer schedules your next spaced review.</p></div>
+          <div class="welcome-step"><span>1</span><h3>Read the agenda + story</h3><p>Three objectives tell you what you are learning. Five short steps explain the job, the colours, the trig idea, the formula, and your first experiment.</p></div>
+          <div class="welcome-step"><span>2</span><h3>Drive the model</h3><p>Move a dial, then read the live coach. Tap the <strong>?</strong> beside any control to see exactly what it changes.</p></div>
+          <div class="welcome-step"><span>3</span><h3>Pass the checkpoint</h3><p>The drill checks objective 3. A correct answer proves the concept and schedules your next spaced review.</p></div>
         </div>
         <h3>The colour language</h3>
         <div class="colour-legend">
@@ -4732,11 +5541,12 @@
 
   function controlMarkup(meta, ctrl) {
     const id = `ctrl-${meta.id}-${ctrl.key}`;
+    const info = `<button class="control-info" type="button" data-control-help="${ctrl.key}" data-control-id="${meta.id}" title="What does this change?" aria-label="Explain ${escapeHtml(ctrl.label)}">?</button>`;
     if (ctrl.type === "toggle") {
       return `
         <div class="control-field control-field--wide">
           <div class="toggle-row">
-            <span>${escapeHtml(ctrl.label)}</span>
+            <span class="toggle-label">${escapeHtml(ctrl.label)}${info}</span>
             <label class="switch">
               <input type="checkbox" id="${id}" data-key="${ctrl.key}" data-type="toggle" ${simStates[meta.id][ctrl.key] ? "checked" : ""} aria-label="${escapeHtml(ctrl.label)}">
               <span class="switch__track"></span>
@@ -4750,7 +5560,7 @@
         .join("");
       return `
         <div class="control-field ${ctrl.wide ? "control-field--wide" : ""}">
-          <label class="control-label" for="${id}"><span>${escapeHtml(ctrl.label)}</span></label>
+          <div class="control-label"><label for="${id}">${escapeHtml(ctrl.label)}</label>${info}</div>
           <select id="${id}" data-key="${ctrl.key}" data-type="select">${opts}</select>
         </div>`;
     }
@@ -4759,10 +5569,10 @@
     const pct = ((Number(ctrl.value) - Number(ctrl.min)) / (Number(ctrl.max) - Number(ctrl.min))) * 100;
     return `
       <div class="control-field ${ctrl.wide ? "control-field--wide" : ""}">
-        <label class="control-label" for="${id}">
-          <span>${escapeHtml(ctrl.label)}</span>
+        <div class="control-label">
+          <span class="control-label__main"><label for="${id}">${escapeHtml(ctrl.label)}</label>${info}</span>
           <output for="${id}">${Number(ctrl.value).toFixed(decimals)}${ctrl.unit || ""}</output>
-        </label>
+        </div>
         <input type="range" id="${id}" data-key="${ctrl.key}" data-type="range" min="${ctrl.min}" max="${ctrl.max}" step="${ctrl.step}" value="${ctrl.value}" data-unit="${escapeHtml(ctrl.unit || "")}" style="--val:${pct}%" aria-label="${escapeHtml(ctrl.label)}">
       </div>`;
   }
@@ -4801,15 +5611,17 @@
       panel.style.setProperty("--accent", meta.accent);
       panel.hidden = true;
 
-      const narr = NARRATIVES[meta.id];
-      const firstStep = narr.story[0];
+      const story = storyFor(meta.id);
+      const lesson = LESSONS[meta.id] || {};
+      const agenda = AGENDAS[meta.id] || { objectives: [], checkpoint: meta.title };
+      const firstStep = story[0];
       const legend = meta.legend
         .map(
           (l) =>
             `<button class="legend__item" type="button" data-legend="${escapeHtml(l)}" title="Explain ${escapeHtml(l)}"><i style="background:${legendColor(l)};box-shadow:0 0 6px ${legendColor(l)}"></i><span>${escapeHtml(l)}</span></button>`
         )
         .join("");
-      const dots = narr.story
+      const dots = story
         .map(
           (_, i) =>
             `<button class="narrator__dot${i === 0 ? " is-active" : ""}" type="button" data-story-step="${i}" aria-label="Story step ${i + 1}" aria-current="${i === 0 ? "step" : "false"}"></button>`
@@ -4835,18 +5647,51 @@
             <span class="formula-explain">explain</span>
           </button>
         </div>
+        <section class="agenda" aria-label="Learning agenda">
+          <div class="agenda__head">
+            <div>
+              <span class="eyebrow">Learning agenda</span>
+              <h2>By the end of this chapter you can…</h2>
+            </div>
+            <span class="agenda__concept">${escapeHtml(lesson.concept || meta.title)}</span>
+          </div>
+          <div class="agenda__body">
+            <div class="agenda__objectives">
+              ${agenda.objectives
+                .map(
+                  (objective, i) => `
+                <div class="agenda-item">
+                  <span class="agenda-item__num">0${i + 1}</span>
+                  <div><strong>${["Understand", "Read the model", "Apply it"][i] || "Practice"}</strong><p>${escapeHtml(objective)}</p></div>
+                </div>`
+                )
+                .join("")}
+            </div>
+            <div class="agenda__method">
+              <span class="agenda__method-label">Best way to learn this</span>
+              <ol>
+                <li>Read the 5-step story</li>
+                <li>Predict, then move one control</li>
+                <li>Explain the idea in your own words</li>
+                <li>Pass the checkpoint drill</li>
+              </ol>
+            </div>
+          </div>
+        </section>
         <section class="narrator" data-narrator="${meta.id}" aria-label="Guided story" aria-live="polite">
           <div class="narrator__icon" aria-hidden="true">${meta.icon}</div>
           <div class="narrator__body">
             <div class="narrator__top">
               <span class="narrator__kicker">Guided story</span>
-              <span class="narrator__count" data-story-count>1 / ${narr.story.length}</span>
+              <span class="narrator__count" data-story-count>1 / ${story.length}</span>
+              <span class="narrator__stage" data-story-stage>The job</span>
               <div class="narrator__dots">${dots}</div>
               <div class="narrator__links">
                 <button type="button" class="narrator__guide" data-story="keys">Colour key</button>
                 <button type="button" class="narrator__guide" data-story="guide">Lab guide</button>
               </div>
             </div>
+            <div class="narrator__concept"><span>Trig focus</span>${escapeHtml(lesson.concept || "Build the idea before the formula")}</div>
             <h2 class="narrator__title" data-story-title>${escapeHtml(firstStep.title)}</h2>
             <p class="narrator__text" data-story-text>${escapeHtml(firstStep.text)}</p>
             <p class="narrator__focus"><span>Look for</span><span data-story-focus>${escapeHtml(firstStep.focus)}</span></p>
@@ -4877,8 +5722,13 @@
               </div>
               <div class="sim-body">
                 <p class="sim-note">${escapeHtml(meta.note)}</p>
+                <p class="sim-hint">Tap the <span class="mini-q">?</span> beside any control to see exactly what it changes and why it matters.</p>
                 <div class="control-grid" data-controls="${meta.id}">
                   ${meta.controls.map((c) => controlMarkup(meta, c)).join("")}
+                </div>
+                <div class="live-coach">
+                  <span class="live-coach__label">Live coach</span>
+                  <p data-coach-text="${meta.id}">Move a slider or flip a switch. I'll explain what changed, what to watch, and the trig idea behind it. <span class="live-coach__trig">Trig focus: ${escapeHtml(lesson.concept || meta.title)}.</span></p>
                 </div>
                 <div class="sim-readout-row">
                   <span>Live model</span>
@@ -4886,10 +5736,10 @@
                 </div>
               </div>
             </section>
-            <section class="glass-card exercise-card" aria-label="Generative exercise">
+            <section class="glass-card exercise-card" aria-label="Checkpoint exercise">
               <div class="card-head">
-                <h2 class="card-head__title"><span class="icon">🎯</span>Generative drill</h2>
-                <span class="card-head__meta">+10 pts · SRS logged</span>
+                <h2 class="card-head__title"><span class="icon">🎯</span>Checkpoint drill</h2>
+                <span class="card-head__meta">Objective 3 · +10 pts</span>
               </div>
               <div class="exercise-body" data-exercise="${meta.id}"></div>
             </section>
@@ -4898,8 +5748,13 @@
       host.appendChild(panel);
     });
 
-    // Guided story, colour-key, and formula interactions (delegated once).
+    // Guided story, colour-key, formula, and control-help interactions (delegated once).
     host.addEventListener("click", (e) => {
+      const controlHelp = e.target.closest("[data-control-help]");
+      if (controlHelp) {
+        openControlHelp(Number(controlHelp.dataset.controlId), controlHelp.dataset.controlHelp);
+        return;
+      }
       const legendBtn = e.target.closest("[data-legend]");
       if (legendBtn) {
         const panel = legendBtn.closest(".module-panel");
@@ -4925,7 +5780,7 @@
       const action = actionEl.dataset.story;
       if (action === "prev") setStoryStep(id, (storyStep[id] || 0) - 1);
       else if (action === "next") {
-        const total = NARRATIVES[id].story.length;
+        const total = storyFor(id).length;
         setStoryStep(id, (storyStep[id] || 0) + 1 >= total ? 0 : (storyStep[id] || 0) + 1);
       } else if (action === "listen") speakStory(id);
       else if (action === "keys") openVisualKey(MODULES[id - 1]);
@@ -4960,6 +5815,7 @@
         updateControlDisplay(input);
         updateHud(id);
         updateReadout(id);
+        updateLiveCoach(id, key);
       });
       grid.addEventListener("change", (e) => {
         const input = e.target;
@@ -4968,6 +5824,7 @@
         simStates[id][key] = input.value;
         updateHud(id);
         updateReadout(id);
+        updateLiveCoach(id, key);
       });
     });
 
@@ -4988,6 +5845,10 @@
         else if (a === "next") renderExercise(id);
         else if (a === "hint") showHint(id);
         else if (a === "steps") showSolution(id);
+        else if (a === "model") {
+          const model = body.querySelector("[data-model]");
+          if (model) model.hidden = !model.hidden;
+        }
       });
       body.addEventListener("keydown", (e) => {
         if (e.key === "Enter" && e.target.matches("input")) {
@@ -5021,10 +5882,12 @@
     exercises[id] = ex;
     choices[id] = null;
     attempts[id] = 0;
+    hints[id] = 0;
     const body = $(`[data-exercise="${id}"]`);
     if (!body) return;
 
     const level = levelFor(state.tabs[id].reviewCount);
+    const agenda = AGENDAS[id] || { checkpoint: meta.title };
     const given = (ex.givens || []).map(([k, v]) => `<span class="given-chip">${escapeHtml(k)} = <b>${escapeHtml(v)}</b></span>`).join("");
     const answerUi =
       ex.mode === "choice"
@@ -5038,9 +5901,13 @@
 
     body.innerHTML = `
       <div class="exercise-tags">
-        <span class="pill pill--accent">✦ Generative</span>
-        <span class="pill">SRS logged</span>
+        <span class="pill pill--accent">✦ Checkpoint</span>
+        <span class="pill">Objective 3 · Apply</span>
         <span class="pill pill--level" data-level-tag>Level ${level} · ${SRS_LEVEL_NAMES[level]}</span>
+      </div>
+      <div class="checkpoint">
+        <span class="checkpoint__label">This drill proves you can</span>
+        <p>${escapeHtml(agenda.checkpoint)}</p>
       </div>
       <p class="exercise-prompt">${ex.prompt}</p>
       <p class="exercise-context">${ex.context}</p>
@@ -5055,6 +5922,13 @@
       <div class="solution" data-solution hidden>
         <div class="solution__head">◈ Worked solution</div>
         <ol>${ex.solution.map((s) => `<li>${s}</li>`).join("")}</ol>
+      </div>
+      <div class="teach-back" data-teachback hidden>
+        <span class="teach-back__label">Explain it back</span>
+        <p>In one sentence: what did this checkpoint prove, and what was the key idea?</p>
+        <textarea class="text-input teach-back__input" rows="2" placeholder="Say it in your own words…" aria-label="Explain the concept in your own words"></textarea>
+        <button class="btn btn-subtle" type="button" data-action="model">Show a model answer</button>
+        <div class="model-answer" data-model hidden>${escapeHtml((AGENDAS[id] && AGENDAS[id].checkpoint) || meta.title)} — the key idea is ${escapeHtml((LESSONS[id] && LESSONS[id].concept) || meta.title)}. Being able to explain it without the formula is the real test.</div>
       </div>
       <div class="exercise-footer" data-review-footer="${id}">${reviewFooterMarkup(id)}</div>`;
 
@@ -5131,8 +6005,10 @@
 
       feedback.hidden = false;
       feedback.className = "feedback feedback--ok";
-      feedback.innerHTML = `<strong>Correct.</strong> +10 points. Review #${newCount} logged — next review in <strong>${days} day${days === 1 ? "" : "s"}</strong>${wasDue ? " (cleared a due badge!)" : ""}.`;
+      feedback.innerHTML = `<strong>Correct.</strong> +10 points. Review #${newCount} logged — next review in <strong>${days} day${days === 1 ? "" : "s"}</strong>${wasDue ? " (cleared a due badge!)" : ""}.<span class="objective-met">✓ Checkpoint passed: ${escapeHtml((AGENDAS[id] && AGENDAS[id].checkpoint) || meta.title)}</span>`;
       solution.hidden = false;
+      const teachBack = body.querySelector("[data-teachback]");
+      if (teachBack) teachBack.hidden = false;
       const input = $(`#answer-${id}`);
       if (input) {
         input.disabled = true;
@@ -5153,7 +6029,8 @@
       feedback.hidden = false;
       feedback.className = "feedback feedback--bad";
       const close = ex.mode === "choice" ? "" : ` Your answer: ${userValue}.`;
-      feedback.innerHTML = `<strong>Not quite.</strong>${close} ${escapeHtml(ex.hint || "Re-read the given values and try again.")}`;
+      const misconception = MISCONCEPTIONS[id] ? `<span class="misconception"><strong>Common trap:</strong> ${escapeHtml(MISCONCEPTIONS[id])}</span>` : "";
+      feedback.innerHTML = `<strong>Not quite.</strong>${close} ${escapeHtml(ex.hint || "Re-read the given values and try again.")}${misconception}`;
       if (attempts[id] >= 2) {
         solution.hidden = false;
         feedback.innerHTML += " The worked solution is open below — follow it, then enter the final answer.";
@@ -5164,11 +6041,25 @@
   function showHint(id) {
     const ex = exercises[id];
     if (!ex) return;
+    const meta = MODULES[id - 1];
     const body = $(`[data-exercise="${id}"]`);
     const feedback = body.querySelector("[data-feedback]");
+    hints[id] = Math.min(3, (hints[id] || 0) + 1);
+    const level = hints[id];
+    let message;
+    if (level === 1) {
+      message = `<strong>Hint 1 · Concept.</strong> ${escapeHtml(ex.hint || "Re-read the given values and try again.")}`;
+    } else if (level === 2) {
+      const givens = (ex.givens || []).map(([k, v]) => `${k} = ${v}`).join(", ");
+      message = `<strong>Hint 2 · Formula.</strong> Use <code>${escapeHtml(meta.formula)}</code>. Your givens are ${escapeHtml(givens)}. Find the unknown, then substitute.`;
+    } else {
+      message = `<strong>Hint 3 · First step.</strong> ${ex.solution[0]} Continue from there and check the units before entering the answer.`;
+    }
     feedback.hidden = false;
     feedback.className = "feedback feedback--warn";
-    feedback.innerHTML = `<strong>Hint.</strong> ${escapeHtml(ex.hint || "Break the problem into the given sides and the unknown.")}`;
+    feedback.innerHTML = message;
+    const hintBtn = body.querySelector('[data-action="hint"]');
+    if (hintBtn) hintBtn.textContent = `Hint ${level}/3`;
   }
 
   function showSolution(id) {
@@ -5510,9 +6401,13 @@
     openModal(`
       <p class="modal-kicker">Operating manual</p>
       <h2>How TrigLab 3D works</h2>
-      <p>You are the new engineer in a virtual STEM lab. Every chapter gives you a story, a live machine, and a short drill. You can start with zero trigonometry knowledge.</p>
+      <p>You are the new engineer in a virtual STEM lab. Every chapter gives you a learning agenda, a five-step lesson, a live machine, and a checkpoint drill. You can start with zero trigonometry knowledge.</p>
+      <h3>Learning agenda</h3>
+      <p>At the top of each chapter, three objectives tell you exactly what you should be able to do: <strong>understand</strong> the concept, <strong>read the model</strong>, and <strong>apply it</strong>. The chapter also shows the most effective learning order: read the story, predict, test one control, explain the idea, then pass the checkpoint.</p>
       <h3>Guided story</h3>
-      <p>Each chapter opens with a three-step narrator: <strong>the mission</strong>, <strong>what the colours mean</strong>, and <strong>what the formula is doing</strong>. Use <strong>Back / Next</strong> to move through it. Tap <strong>🔊 Listen</strong> to hear the current step read aloud.</p>
+      <p>Each chapter has five steps: <strong>the job</strong>, <strong>what you are looking at</strong>, <strong>the trig idea in everyday words</strong>, <strong>the formula in action</strong>, and <strong>your turn</strong> with a concrete experiment. Use <strong>Back / Next</strong> to move through it. Tap <strong>🔊 Listen</strong> to hear the current step read aloud.</p>
+      <h3>Control guides and live coach</h3>
+      <p>Tap the <strong>?</strong> beside any slider, select, or switch. The pop-up says what the control changes, what to watch in the 3D scene and HUD, and which trig idea it belongs to. After you move a control, the <strong>Live coach</strong> explains what just changed in plain English.</p>
       <h3>Colour keys and formula decoder</h3>
       <p>The chips in the top-right of the 3D viewport are buttons. Tap one for a plain-English explanation of that colour in this specific simulator. Tap the formula pill next to the chapter title for a symbol-by-symbol decoder. On a phone, use the <strong>Colour key</strong> button above the 3D scene.</p>
       <ul>
@@ -5539,6 +6434,8 @@
       <p><strong>Save Progress File</strong> downloads <code>trig_srs_progress.json</code> with every timestamp, review count, status and score. <strong>Load Progress File</strong> restores it on any device; local progress is also cached in <code>localStorage</code>.</p>
       <h3>3D controls</h3>
       <p>Drag to orbit, scroll or pinch to zoom, right-drag to pan. Every simulator updates its HUD, formula chips and exercises in real time.</p>
+      <h3>Why this design</h3>
+      <p>The chapter moves from a concrete machine, to visual/representational cues, to symbolic maths (CRA). It uses prediction, observation, and explanation (POE), chunked steps and worked examples to manage cognitive load, a misconception-aware checkpoint for retrieval practice, and spaced reviews for long-term retention.</p>
       <h3>Credits</h3>
       <p>Built with <strong>OpenCode</strong> and <strong>DeepSeek V4.1 Flash</strong>. 3D powered by Three.js r128 + OrbitControls. Static, read-only GitHub Pages compatible — no backend, no build step.</p>
       <div class="modal-actions">
