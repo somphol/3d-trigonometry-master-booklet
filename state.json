@@ -1,21 +1,21 @@
 {
   "project": "3d-trigonometry-master-booklet",
-  "description": "TrigLab 3D — a 20-tab interactive 3D trigonometry master booklet with real-world engineering simulators, generative drills, and a portable spaced-repetition system.",
+  "description": "TrigLab 3D — a 20-tab interactive 3D trigonometry master booklet with guided storytelling, plain-English colour keys and formula decoders, engineering simulators, generative drills, and a portable spaced-repetition system.",
   "build": {
     "startedAt": "2026-10-31T23:31:24.546000Z",
-    "completedAt": "2026-10-31T23:49:56Z",
-    "durationSeconds": 1111,
-    "durationHuman": "18m 31s",
+    "completedAt": "2026-11-01T00:28:20Z",
+    "durationSeconds": 3415,
+    "durationHuman": "56m 55s",
     "timezone": "UTC"
   },
   "tokens": {
-    "input": 360017,
-    "output": 103875,
-    "reasoning": 51738,
-    "cacheRead": 10177664,
+    "input": 451460,
+    "output": 143854,
+    "reasoning": 79299,
+    "cacheRead": 25272320,
     "cacheWrite": 1583,
-    "total": 515630,
-    "totalWithCache": 10694877,
+    "total": 674613,
+    "totalWithCache": 25948516,
     "note": "Snapshot from the OpenCode session record when the project was packaged. total = input + output + reasoning. Cache reads/writes are reported separately because they are a subset of context usage."
   },
   "cost": {
@@ -38,6 +38,12 @@
     "modules": 20,
     "threeScenes": 20,
     "exerciseGenerators": 20,
+    "guidedStoryStepsPerChapter": 3,
+    "guidedStoryStepsTotal": 60,
+    "colourKeyExplainers": 60,
+    "formulaDecoders": 20,
+    "narration": "Web Speech API (SpeechSynthesis), opt-in Listen button",
+    "firstVisitBriefing": true,
     "srsIntervalsDays": {
       "level1": 1,
       "level2": 3,
@@ -57,16 +63,16 @@
         "lines": 165
       },
       "style.css": {
-        "bytes": 39320,
-        "lines": 1327
+        "bytes": 47220,
+        "lines": 1579
       },
       "script.js": {
-        "bytes": 199403,
-        "lines": 4544
+        "bytes": 265893,
+        "lines": 5716
       }
     },
-    "totalLines": 6036,
-    "totalBytes": 247218
+    "totalLines": 7460,
+    "totalBytes": 321608
   },
   "verification": {
     "browser": "Headless Chrome 156 (SwiftShader WebGL)",
@@ -75,6 +81,10 @@
       "390x844"
     ],
     "tabsRendered": 20,
+    "guidedStoriesVerified": 20,
+    "colourKeyPopupsVerified": 60,
+    "formulaDecodersVerified": 20,
+    "welcomeBriefingVerified": true,
     "exercisesSolved": 20,
     "exerciseGradingVerified": true,
     "srsTimestampsVerified": true,
@@ -91,6 +101,10 @@
     "STATE.md",
     "state.json",
     "screenshot.png",
+    "screenshot-welcome.png",
+    "screenshot-key.png",
+    "screenshot-formula.png",
+    "screenshot-mobile.png",
     "screenshot-truss.png",
     "screenshot-globe.png",
     "LICENSE",

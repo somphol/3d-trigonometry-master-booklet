@@ -17,6 +17,19 @@ TrigLab 3D is a complete 20-chapter trigonometry booklet where each chapter has:
 
 The UI uses a dark STEM-laboratory theme with glassmorphism panels, cyan/magenta/yellow signal colours, and a scrollable 20-tab curriculum rail. It is fully responsive and works as a read-only GitHub Pages site.
 
+## New learner guidance
+
+No prior trigonometry is assumed.
+
+- **Guided story on every chapter** — three short steps explain the real-world job, what the 3D colours mean, and what the formula is doing before you touch a control.
+- **Read-aloud narration** — the **🔊 Listen** button reads the current story step using the browser's speech synthesis.
+- **Clickable colour keys** — the cyan/magenta/yellow chips in the viewport are buttons. Tap one for a plain-English definition plus what that colour is doing in this simulator. On phones, use the **Colour key** button above the scene.
+- **Formula decoder** — tap the formula pill beside the chapter title for a symbol-by-symbol explanation in everyday language.
+- **One-time welcome briefing** — first-time visitors get a short introduction to the story → model → drill loop and the colour language.
+- **Worked solutions and hints** remain available in every drill, so a wrong answer is a learning step rather than a dead end.
+
+[![Welcome briefing](screenshot-welcome.png)](screenshot-welcome.png) [![Colour key pop-up](screenshot-key.png)](screenshot-key.png)
+
 ## Curriculum map
 
 | # | Chapter | Real-world simulator | Core idea |
@@ -93,8 +106,12 @@ If the 3D engine cannot load, the drills and SRS still work and a clear fallback
 .
 ├── index.html                 # Shell, header, controls, boot screen, CDN scripts
 ├── style.css                  # Dark STEM design system + responsive layout
-├── script.js                  # 20 modules, 20 Three.js scenes, SRS, grading, import/export
-├── screenshot.png             # Chapter 01 — robotic arm
+├── script.js                  # 20 modules, scenes, guided stories, SRS, grading, import/export
+├── screenshot.png             # Chapter 01 — guided story and robotic arm
+├── screenshot-welcome.png     # First-visit learner briefing
+├── screenshot-key.png         # Plain-English colour-key pop-up
+├── screenshot-formula.png     # Formula decoder
+├── screenshot-mobile.png      # Responsive guided-story layout
 ├── screenshot-truss.png       # Chapter 08 — roof truss
 ├── screenshot-globe.png       # Chapter 20 — GPS globe
 ├── STATE.md                   # Build duration, token usage, and credits
@@ -114,7 +131,8 @@ If the 3D engine cannot load, the drills and SRS still work and a clear fallback
 
 The shipped build was exercised in headless Chrome across all 20 tabs:
 
-- 20/20 panels render, each with a live WebGL canvas, four HUD chips, simulator controls, and a generated drill.
+- 20/20 panels render, each with a live WebGL canvas, four HUD chips, simulator controls, a three-step guided story, three colour keys, a formula decoder, and a generated drill.
+- 20/20 colour-key pop-ups and formula decoders open with the correct chapter label and plain-English content.
 - 20/20 generative exercises solved through the real UI; grading, worked solutions, score increments, review counts, status transitions, and next-review timestamps verified.
 - JSON import round-trip verified, including score, badges, due count, and `localStorage` persistence.
 - No uncaught exceptions or console errors.

@@ -618,6 +618,815 @@
   ];
 
   /* ------------------------------------------------------------------------
+     1b. Storytelling, visual keys, and formula decoders
+     Every chapter tells the learner what they are looking at before asking
+     them to manipulate it. The vocabulary assumes no prior trig knowledge.
+     ------------------------------------------------------------------------ */
+  const NARRATIVES = {
+    1: {
+      story: [
+        {
+          title: "Your first shift as a robot operator",
+          text: "You are in charge of a pick-and-place arm on a factory floor. The controller only accepts a final orientation between 0° and 360°, even when the arm has spun several times in different directions.",
+          focus: "the blue turntable, the two arm segments, and the yellow gripper at the end.",
+        },
+        {
+          title: "What the colours are telling you",
+          text: "Cyan is the scene's cosine channel: it marks the base, shoulder, and the horizontal part of motion. Magenta is the sine channel: it highlights the elbow and the vertical reach. Yellow is the angle and pickup channel.",
+          focus: "the glowing ring at each joint. Those rings are the rotations you are about to command.",
+        },
+        {
+          title: "Turn a spin into one clean angle",
+          text: "If the arm starts at 168° and turns −106°, add the two values to get 62°. The 'mod 360°' rule simply means adding or subtracting full circles until the result sits between 0° and 360°. Drag Base yaw and watch the cyan HUD update.",
+          focus: "the yellow arc on the turntable. It shows the base's angle measured counter-clockwise from the front.",
+        },
+      ],
+      math: "θf = (θ0 + Δθ) mod 360° means: take the starting angle, add the signed rotation, then wrap around the circle until the answer is in standard position.",
+      mathParts: [
+        ["θ0", "where the arm starts, in degrees"],
+        ["Δθ", "the signed turn: positive is counter-clockwise, negative is clockwise"],
+        ["mod 360°", "keep only the final direction after removing complete 360° turns"],
+      ],
+      keys: {
+        "cosine": {
+          meaning: "Cosine is the horizontal share of a direction. On a unit circle it is the x-coordinate; in a right triangle it is adjacent ÷ hypotenuse.",
+          here: "Cyan marks the horizontal/cosine channel. In this scene it lights the base and shoulder so you can see how far the arm leans left or right.",
+        },
+        "sine": {
+          meaning: "Sine is the vertical share of a direction. On a unit circle it is the y-coordinate; in a right triangle it is opposite ÷ hypotenuse.",
+          here: "Magenta marks the vertical/sine channel. Here it highlights the elbow and the arm's upward reach.",
+        },
+        "rotation arc": {
+          meaning: "An arc is part of a circle. A rotation arc runs from the zero direction to the current angle, so its length represents the size of the turn.",
+          here: "The yellow arc on the turntable is the base's commanded angle, measured counter-clockwise from the front of the robot.",
+        },
+      },
+    },
+    2: {
+      story: [
+        {
+          title: "A wheel is a rotating circle",
+          text: "You are tuning a vehicle's speed display. The tire spins at a certain number of revolutions per minute, but the driver cares about kilometres per hour on the road.",
+          focus: "the large tire, the road beneath it, and the glowing speedometer on the right.",
+        },
+        {
+          title: "Two ways to measure the same turn",
+          text: "Degrees and radians both measure rotation. One full revolution is 360° or 2π radians. The cyan arrow shows forward road direction, the magenta needle shows the wheel turning, and the yellow arrow shows the resulting velocity.",
+          focus: "the yellow velocity arrow. It grows as the tire's linear speed increases.",
+        },
+        {
+          title: "Bridge revolutions to road speed",
+          text: "Convert rpm to radians per second with 2πN/60, multiply by the tire radius in metres, then multiply by 3.6 to reach km/h. Drag the Tire speed and Tire radius sliders and watch the HUD respond.",
+          focus: "the 'Linear v' HUD chip. It is the same calculation the car's speedometer uses.",
+        },
+      ],
+      math: "v = ωr and ω = 2πN/60. In words: turn rpm into radians per second, then multiply by the wheel radius to get metres per second.",
+      mathParts: [
+        ["N", "tire revolutions per minute (rpm)"],
+        ["ω", "angular velocity in radians per second"],
+        ["r", "tire radius in metres"],
+        ["v", "linear road speed in metres per second"],
+      ],
+      keys: {
+        "cosine": {
+          meaning: "Cosine is the horizontal or forward share of a rotating direction.",
+          here: "Cyan marks the forward road direction and the horizontal component of the wheel's motion.",
+        },
+        "sine": {
+          meaning: "Sine is the vertical or sideways share of a rotating direction.",
+          here: "Magenta marks the wheel's rotation and the speedometer needle, which sweeps through a circular scale.",
+        },
+        "velocity vector": {
+          meaning: "A vector is an arrow with both size and direction. A velocity vector points the way something moves; its length represents speed.",
+          here: "The yellow arrow points along the road. It gets longer as the tire's linear speed increases.",
+        },
+      },
+    },
+    3: {
+      story: [
+        {
+          title: "Measure a tower without climbing it",
+          text: "You are a surveyor standing on the street. A skyscraper is too tall to measure with a tape, but you can measure how far you stand from it and the angle at which you sight its roof.",
+          focus: "the small tripod at street level and the glass tower in front of you.",
+        },
+        {
+          title: "A right triangle hiding in the city",
+          text: "The horizontal distance is the adjacent side (cyan). The height above your eye is the opposite side (magenta). The sight line to the roof is the hypotenuse (yellow), and the clinometer angle sits between the horizontal and that sight line.",
+          focus: "the dashed horizontal cyan line and the dashed vertical yellow line. They form a right angle at the tower base.",
+        },
+        {
+          title: "Tangent turns an angle into height",
+          text: "Tangent compares opposite to adjacent: tan θ = height ÷ distance. Multiply distance by tan θ, then add your 1.6 m eye height. Move the clinometer angle and watch the tower, sight line, and HUD height grow together.",
+          focus: "the height readout and the rooftop marker. They should agree with the geometry you see.",
+        },
+      ],
+      math: "tan θ = opposite / adjacent. Here the opposite side is the height above eye level and the adjacent side is the ground distance. The final height adds eye height.",
+      mathParts: [
+        ["θ", "clinometer angle measured up from horizontal"],
+        ["opposite", "tower height above your eye"],
+        ["adjacent", "horizontal distance from you to the tower"],
+        ["eye height", "the 1.6 m you must add at the end"],
+      ],
+      keys: {
+        "cosine": {
+          meaning: "Cosine connects the adjacent side to the hypotenuse: cos θ = adjacent ÷ hypotenuse.",
+          here: "Cyan marks the ground distance — the adjacent side of the sight triangle.",
+        },
+        "sine": {
+          meaning: "Sine connects the opposite side to the hypotenuse: sin θ = opposite ÷ hypotenuse.",
+          here: "Magenta marks the height above eye level — the opposite side of the sight triangle.",
+        },
+        "tangent height": {
+          meaning: "Tangent compares opposite to adjacent. It is the slope of the sight line and the quickest way to turn distance plus angle into height.",
+          here: "The yellow sight line and rooftop marker show the tangent relationship growing as the angle increases.",
+        },
+      },
+    },
+    4: {
+      story: [
+        {
+          title: "Design a lens that bends light predictably",
+          text: "You are an optical engineer. A laser hits a glass lens at an angle. The light changes direction at the surface, and your job is to predict the new angle instead of guessing.",
+          focus: "the violet lens, the magenta incoming beam, and the cyan outgoing beam.",
+        },
+        {
+          title: "Angles are measured from the normal",
+          text: "The dashed horizontal line is the normal — an imaginary line perpendicular to the lens surface. Both the incidence angle and the refraction angle are measured from that normal, not from the surface itself.",
+          focus: "the two small arcs at the lens centre. They show θ₁ and θ₂ opening away from the dashed normal.",
+        },
+        {
+          title: "Snell's law is a ratio of sines",
+          text: "n₁ sin θ₁ = n₂ sin θ₂. A larger refractive index bends light more strongly toward the normal. Increase n₂ and watch the cyan beam pull closer to the dashed line; push the angle far enough and total internal reflection sends the beam back.",
+          focus: "the refraction readout and the cyan ray. If the HUD says TIR, the ray turns yellow and reflects inside the glass.",
+        },
+      ],
+      math: "n₁ sin θ₁ = n₂ sin θ₂. The refractive index n measures how strongly a material slows and bends light. Solve for sin θ₂, then take the inverse sine.",
+      mathParts: [
+        ["n₁", "refractive index of the source medium (air = 1.00, water = 1.33)"],
+        ["n₂", "refractive index of the lens"],
+        ["θ₁", "incidence angle measured from the normal"],
+        ["θ₂", "refraction angle measured from the normal"],
+      ],
+      keys: {
+        "cosine": {
+          meaning: "Cosine is the component of a direction along the surface-adjacent axis. In optics it often describes how much of a ray runs along the interface.",
+          here: "Cyan is the outgoing/refracted ray and the cosine-like component of the light path.",
+        },
+        "sine": {
+          meaning: "Sine is the component perpendicular to the interface. Snell's law is written with sines because refraction is driven by the perpendicular component.",
+          here: "Magenta is the incoming laser. The incidence angle opens between this ray and the dashed normal.",
+        },
+        "refracted beam": {
+          meaning: "The refracted beam is the part of the light that passes into the new material and changes direction.",
+          here: "The cyan ray inside and beyond the lens. Its angle from the dashed normal is θ₂ in the HUD.",
+        },
+      },
+    },
+    5: {
+      story: [
+        {
+          title: "Inspect a ramp before someone uses it",
+          text: "You are an accessibility inspector. A ramp looks gentle, but a few degrees too steep can make a wheelchair unsafe. You have the rise and the run; you need the incline angle.",
+          focus: "the ramp, the wheelchair, and the colour of the deck. Green is compliant, yellow is marginal, red is unsafe.",
+        },
+        {
+          title: "Rise, run, and the invisible triangle",
+          text: "The horizontal run is cyan and the vertical rise is yellow. The sloped deck is the hypotenuse. The angle between the deck and the ground is what the inspector must recover.",
+          focus: "the dashed cyan run line and the dashed yellow rise line at the end of the ramp.",
+        },
+        {
+          title: "Use inverse tangent to recover the angle",
+          text: "tan θ = rise ÷ run, so θ = arctan(rise ÷ run). A 4.8° threshold is roughly a 1:12 slope. Drag the incline slider and watch the deck colour and safety readout change.",
+          focus: "the grade percentage and the 1:12 ratio in the HUD. They describe the same slope in different ways.",
+        },
+      ],
+      math: "θ = arctan(rise / run). Inverse tangent answers the question: what angle has this slope? The ratio is rise divided by horizontal run.",
+      mathParts: [
+        ["rise", "vertical height gained by the ramp"],
+        ["run", "horizontal distance covered by the ramp"],
+        ["θ", "incline angle above the ground"],
+        ["4.8°", "a common accessibility threshold, approximately 1:12"],
+      ],
+      keys: {
+        "cosine": {
+          meaning: "Cosine links the horizontal run to the sloped length: cos θ = run ÷ ramp length.",
+          here: "Cyan marks the horizontal run at the base of the ramp.",
+        },
+        "sine": {
+          meaning: "Sine links the vertical rise to the sloped length: sin θ = rise ÷ ramp length.",
+          here: "Yellow marks the vertical rise at the high end of the ramp.",
+        },
+        "slope vector": {
+          meaning: "A slope vector points along the ramp. Its horizontal part is the run and its vertical part is the rise.",
+          here: "The wheelchair rolls along this vector. The deck changes colour as the slope crosses safety thresholds.",
+        },
+      },
+    },
+    6: {
+      story: [
+        {
+          title: "Turn a joystick into character motion",
+          text: "You are building a game controller. The player pushes a stick inside a circular gate; the game needs a clean horizontal and vertical number to move the character.",
+          focus: "the glowing unit circle, the joystick controller, and the small character platform.",
+        },
+        {
+          title: "The circle is a map of every direction",
+          text: "A point on the unit circle has coordinates (cos θ, sin θ). Cyan drops to the x-axis to show the cosine; magenta runs across to the y-axis to show the sine. The radius is always 1, so the numbers stay between −1 and 1.",
+          focus: "the cyan and magenta projection lines. They are the horizontal and vertical parts of the joystick push.",
+        },
+        {
+          title: "Tangent and the joystick angle",
+          text: "Tangent is sine divided by cosine: tan θ = y ÷ x. It measures steepness. Some joystick games use the raw sin/cos pair; others use the angle. Drag the joystick angle and watch all three numbers change.",
+          focus: "the yellow tangent segment at x = 1. It shoots up or down as the angle approaches 90° or 270°.",
+        },
+      ],
+      math: "On the unit circle, x = cos θ and y = sin θ. Tangent is the ratio y/x. The angle θ is measured counter-clockwise from the positive x-axis.",
+      mathParts: [
+        ["cos θ", "x-coordinate: how far right or left"],
+        ["sin θ", "y-coordinate: how far up or down"],
+        ["tan θ", "slope y/x; undefined when x = 0"],
+        ["unit circle", "a circle of radius 1 centred at the origin"],
+      ],
+      keys: {
+        "cosine X": {
+          meaning: "Cosine is the x-coordinate on the unit circle — the horizontal share of the joystick push.",
+          here: "The cyan vertical drop line and the cyan x-axis show cos θ. Right is positive, left is negative.",
+        },
+        "sine Y": {
+          meaning: "Sine is the y-coordinate on the unit circle — the vertical share of the joystick push.",
+          here: "The magenta horizontal line and the magenta y-axis show sin θ. Up is positive, down is negative.",
+        },
+        "tangent": {
+          meaning: "Tangent is the slope of the radius: sine divided by cosine. It blows up near 90° and 270° because the horizontal share becomes zero.",
+          here: "The yellow segment at x = 1 is the tangent height. It is clamped in the drawing so extreme values stay visible.",
+        },
+      },
+    },
+    7: {
+      story: [
+        {
+          title: "Identify an aircraft from its bearing alone",
+          text: "You are an air-traffic-control trainee. A target appears at a bearing on the radar. Before you can label it, you need to know which trig functions are positive in that part of the sky.",
+          focus: "the circular radar floor, the sweeping wedge, and the glowing target blip.",
+        },
+        {
+          title: "ASTC is a four-letter memory aid",
+          text: "Quadrant I: All functions positive. Quadrant II: Sine positive. Quadrant III: Tangent positive. Quadrant IV: Cosine positive. The sweep and the concentric rings help you see which quadrant the target occupies.",
+          focus: "the target's position relative to the cyan x-axis and magenta y-axis. Those signs are what ASTC describes.",
+        },
+        {
+          title: "Use the reference angle, then apply the sign",
+          text: "A 140° bearing is 40° past the negative x-axis. Its reference angle is 40°, and because it is in Quadrant II, cosine is negative. Drag the target bearing and watch the quadrant and sign readouts change.",
+          focus: "the 'Quadrant' and 'Reference' HUD chips. They turn a large bearing into a small angle plus a sign.",
+        },
+      ],
+      math: "ASTC tells you the sign of sine, cosine, and tangent in each quadrant. The magnitude comes from the reference angle measured to the nearest x-axis.",
+      mathParts: [
+        ["All", "Quadrant I: sine, cosine, tangent all positive"],
+        ["Sine", "Quadrant II: only sine positive"],
+        ["Tangent", "Quadrant III: only tangent positive"],
+        ["Cosine", "Quadrant IV: only cosine positive"],
+      ],
+      keys: {
+        "cosine": {
+          meaning: "Cosine is positive when the x-coordinate is positive: Quadrants I and IV.",
+          here: "Cyan marks the horizontal axis that decides the sign of cosine.",
+        },
+        "sine": {
+          meaning: "Sine is positive when the y-coordinate is positive: Quadrants I and II.",
+          here: "Magenta marks the vertical axis that decides the sign of sine.",
+        },
+        "target": {
+          meaning: "The target is the aircraft blip the radar is tracking. Its bearing and range locate it in polar coordinates.",
+          here: "The glowing amber blip and its dashed beacon. Drag Target bearing to move it between quadrants.",
+        },
+      },
+    },
+    8: {
+      story: [
+        {
+          title: "Frame a roof without wasting timber",
+          text: "You are a carpenter building a gable roof. The span and pitch are fixed by the house design, but you need the rafter length and rise before you cut any timber.",
+          focus: "the timber truss, the house walls beneath it, and the dashed measuring lines.",
+        },
+        {
+          title: "Special triangles have fixed side ratios",
+          text: "A 30-60-90 triangle has sides in the ratio 1 : √3 : 2. A 45-45-90 triangle has sides 1 : 1 : √2. Those ratios let you calculate missing lengths without a calculator.",
+          focus: "the yellow rafters, the cyan web members, and the magenta ridge. The rafters are the hypotenuse of each half of the roof.",
+        },
+        {
+          title: "Pitch decides rise and rafter length",
+          text: "Rise = half-span × tan(pitch). Rafter = half-span ÷ cos(pitch). Increase the pitch and the roof gets taller while the rafters get longer. Drag the pitch slider and watch the HUD rebuild.",
+          focus: "the 'Rise' and 'Rafter' readouts. They update while the truss geometry rebuilds in real time.",
+        },
+      ],
+      math: "For a gable roof, half the span is the adjacent side, the rise is opposite, and the rafter is the hypotenuse. Rise = half-span × tan θ and rafter = half-span ÷ cos θ.",
+      mathParts: [
+        ["half-span", "half the building width, the adjacent side"],
+        ["pitch", "roof angle above horizontal"],
+        ["rise", "vertical height gained from wall to ridge"],
+        ["rafter", "sloped length of one roof member"],
+      ],
+      keys: {
+        "cosine": {
+          meaning: "Cosine connects the adjacent half-span to the sloped rafter: cos θ = half-span ÷ rafter.",
+          here: "Cyan marks the horizontal half-span and the web members that divide the truss.",
+        },
+        "sine": {
+          meaning: "Sine connects the vertical rise to the sloped rafter: sin θ = rise ÷ rafter.",
+          here: "Magenta marks the ridge and the vertical proportion of the roof.",
+        },
+        "rafters": {
+          meaning: "Rafters are the sloping beams that carry the roof surface. Each one is the hypotenuse of a right triangle.",
+          here: "The yellow sloping beams. Their length is shown in the HUD and changes with the pitch.",
+        },
+      },
+    },
+    9: {
+      story: [
+        {
+          title: "Generate electricity with a spinning coil",
+          text: "You are on the grid operations team. A coil rotates inside a magnetic field, and the changing angle induces a voltage. Your job is to understand why the output is a sine wave.",
+          focus: "the magenta coil, the two magnetic poles, and the waveform panel behind the generator.",
+        },
+        {
+          title: "A rotating loop projects a sine wave",
+          text: "As the coil turns, only the part of its area facing the magnetic field generates voltage. That projection rises and falls smoothly: the vertical projection is sine, the horizontal projection is cosine. The cyan arrows show the magnetic field.",
+          focus: "the coil's angle and the magenta wave. Each full turn of the coil produces one full sine cycle.",
+        },
+        {
+          title: "Peak, RMS, and frequency",
+          text: "The peak voltage is the tallest point of the sine wave. The RMS voltage is the equivalent steady DC voltage, equal to peak ÷ √2. Frequency says how many cycles happen per second. Turn up the frequency and the wave gets squeezed tighter.",
+          focus: "the V RMS and Period HUD chips. They convert the wave's height and speed into engineering numbers.",
+        },
+      ],
+      math: "v(t) = Vp sin(2πft) describes a sine wave with peak voltage Vp and frequency f. RMS voltage is Vp/√2.",
+      mathParts: [
+        ["Vp", "peak voltage at the top of the sine wave"],
+        ["f", "frequency in cycles per second (Hz)"],
+        ["t", "time in seconds"],
+        ["Vrms", "equivalent steady voltage, Vp ÷ √2"],
+      ],
+      keys: {
+        "cosine": {
+          meaning: "Cosine is the horizontal projection of a rotating vector. It is 90° out of step with sine.",
+          here: "Cyan marks the magnetic field arrows and the coil's horizontal projection.",
+        },
+        "sine EMF": {
+          meaning: "The induced electromotive force follows the vertical projection of the rotating coil, producing a sine wave.",
+          here: "The magenta coil and the magenta waveform. The wave's height is the instantaneous voltage at that moment.",
+        },
+        "coil": {
+          meaning: "The coil is the loop of wire rotating in the magnetic field. Its changing orientation is what generates voltage.",
+          here: "The magenta rectangular loop. It spins continuously and drives the waveform on the panel.",
+        },
+      },
+    },
+    10: {
+      story: [
+        {
+          title: "Make a clock tick at the right rate",
+          text: "You are restoring a pendulum clock. The bob swings back and forth, and its horizontal shadow moves in a smooth, repeating pattern. Your job is to connect the swing angle to that motion.",
+          focus: "the pendulum frame, the glowing bob, and the cosine trace on the right.",
+        },
+        {
+          title: "The pendulum draws a cosine",
+          text: "At the extremes the bob is momentarily still; at the centre it moves fastest. Its horizontal displacement is x = L sin θ. Plotted against time, that back-and-forth motion looks like a cosine wave.",
+          focus: "the cyan trace and the yellow marker travelling along it. That is the horizontal motion unrolled over time.",
+        },
+        {
+          title: "Length controls the period",
+          text: "A longer pendulum swings more slowly. The period is T = 2π√(L/g), so doubling the length increases the period by about 1.41×. Drag the length slider and watch the period and swing speed change.",
+          focus: "the 'Period T' HUD chip. It tells you how many seconds one complete back-and-forth takes.",
+        },
+      ],
+      math: "x = L sin θ gives the bob's horizontal displacement. For small swings the motion is approximately simple harmonic, with period T = 2π√(L/g).",
+      mathParts: [
+        ["L", "pendulum length from pivot to bob"],
+        ["θ", "angle from vertical"],
+        ["x", "horizontal displacement from the centre line"],
+        ["T", "time for one complete back-and-forth swing"],
+      ],
+      keys: {
+        "cosine shadow": {
+          meaning: "The horizontal shadow of circular motion traces a cosine wave over time.",
+          here: "The cyan trace is that shadow, plotted as displacement versus time.",
+        },
+        "sine bob": {
+          meaning: "Sine gives the vertical or angular position of the bob as it swings.",
+          here: "The magenta bob and its arc show the swing angle. The bob's height follows a sine-like projection.",
+        },
+        "trace": {
+          meaning: "A trace is a path left behind by a moving point. Here it turns the pendulum's repetitive motion into a readable wave.",
+          here: "The cyan wave and yellow marker on the right-hand panel. The marker moves as the pendulum swings.",
+        },
+      },
+    },
+    11: {
+      story: [
+        {
+          title: "Sweep a lighthouse beam to the shore",
+          text: "You are the keeper of a lighthouse. The lamp sits high above the water, and its beam must reach a boat at a known horizontal distance. You need the angle between the beam and the sea.",
+          focus: "the tower, the yellow beam, the shoreline, and the small boat.",
+        },
+        {
+          title: "The beam forms a right triangle",
+          text: "The tower height is the opposite side (magenta), the shoreline distance is the adjacent side (cyan), and the beam is the hypotenuse (yellow). The depression angle opens between the horizontal and the beam.",
+          focus: "the dashed cyan distance line and the dashed vertical height line. The tangent ratio compares them.",
+        },
+        {
+          title: "Tangent approaches infinity at 90°",
+          text: "tan θ = height ÷ distance. As the distance shrinks, the angle approaches 90° and the tangent grows without bound; at exactly 90° it is undefined. That is the vertical asymptote marked by the dashed line.",
+          focus: "the 'Depression θ' readout. Shrink the shore distance and watch the angle race upward.",
+        },
+      ],
+      math: "tan θ = height / distance. At 90° the beam is vertical and never meets a shoreline at a finite distance, so tangent is undefined there.",
+      mathParts: [
+        ["height", "tower height above the water"],
+        ["distance", "horizontal reach from tower to shoreline"],
+        ["θ", "depression angle below horizontal"],
+        ["90°", "the vertical asymptote where tangent is undefined"],
+      ],
+      keys: {
+        "cosine": {
+          meaning: "Cosine links the horizontal distance to the beam length: cos θ = distance ÷ beam.",
+          here: "Cyan marks the horizontal distance from the tower to the shore.",
+        },
+        "sine": {
+          meaning: "Sine links the tower height to the beam length: sin θ = height ÷ beam.",
+          here: "Magenta marks the vertical height of the lamp above the water.",
+        },
+        "tangent beam": {
+          meaning: "Tangent compares tower height to shoreline distance. It grows rapidly as the beam becomes more vertical.",
+          here: "The yellow lighthouse beam. Its angle is the depression angle in the HUD.",
+        },
+      },
+    },
+    12: {
+      story: [
+        {
+          title: "Tune a radio transmitter",
+          text: "You are a broadcast engineer. A station's carrier frequency determines its wavelength, period, and how its radio waves spread from the antenna. AM and FM use very different frequency bands.",
+          focus: "the antenna mast, the expanding rings, the waveform, and the receiver box.",
+        },
+        {
+          title: "Frequency is cycles per second",
+          text: "One hertz means one cycle per second. A 98.7 MHz FM signal completes 98,700,000 cycles every second. The rings expanding from the mast represent wavefronts moving outward; their spacing relates to wavelength.",
+          focus: "the cyan or yellow wavefront rings. Their colour changes with the selected band.",
+        },
+        {
+          title: "Period and wavelength are reciprocals",
+          text: "Period T = 1/f. Wavelength λ = c/f, or 300 ÷ f(MHz) metres. Higher frequency means a shorter period and a shorter wavelength. Drag the frequency and watch the HUD and ring speed change.",
+          focus: "the Period and Wavelength chips. They are two ways of describing the same carrier.",
+        },
+      ],
+      math: "Frequency f and period T are reciprocals: T = 1/f. For radio, wavelength λ = c/f; using f in MHz, the shortcut is λ = 300/f metres.",
+      mathParts: [
+        ["f", "carrier frequency in hertz (or MHz)"],
+        ["T", "period of one cycle in seconds"],
+        ["λ", "wavelength in metres"],
+        ["c", "speed of light, 3 × 10⁸ m/s"],
+      ],
+      keys: {
+        "cosine": {
+          meaning: "Cosine is one of the two projections of a rotating phasor; it is 90° out of phase with sine.",
+          here: "Cyan is the cosine channel and the FM wavefront colour.",
+        },
+        "sine carrier": {
+          meaning: "A carrier wave is the steady high-frequency sine wave that carries a signal. Its amplitude and frequency define the transmission.",
+          here: "The magenta waveform rising and falling across the scene.",
+        },
+        "wavefronts": {
+          meaning: "Wavefronts are expanding surfaces of equal phase. The distance between them is the wavelength.",
+          here: "The rings leaving the antenna. Higher frequency makes them expand faster and pack closer together.",
+        },
+      },
+    },
+    13: {
+      story: [
+        {
+          title: "Cancel noise with opposite noise",
+          text: "You are designing noise-cancelling headphones. A microphone hears a noise wave; the headphone speaker plays a mirrored wave so the two cancel before they reach your ear.",
+          focus: "the two speaker boxes, the magenta noise wave, the cyan anti-noise wave, and the green result.",
+        },
+        {
+          title: "Phase is a timing offset",
+          text: "Phase measures how far one wave is shifted relative to another. A 180° shift flips the wave upside down: peaks meet troughs and cancel. A 0° shift makes them add together and double.",
+          focus: "the green resultant wave. It shrinks toward a flat line near 180° and grows near 0° or 360°.",
+        },
+        {
+          title: "Cancel at 180°, boost at 0°",
+          text: "Two equal waves combine to 2A cos(φ/2). At φ = 180° the cosine is zero, so the result is silence. Drag the phase slider slowly and watch the cancellation meter swing.",
+          focus: "the cancellation percentage and the green meter. They peak at 180°.",
+        },
+      ],
+      math: "For two equal-amplitude waves with phase offset φ, the resultant amplitude is 2A|cos(φ/2)|. At 180° this is zero; at 0° it is 2A.",
+      mathParts: [
+        ["A", "amplitude of each original wave"],
+        ["φ", "phase offset between the waves, in degrees"],
+        ["2A cos(φ/2)", "resultant amplitude after superposition"],
+        ["180°", "perfect destructive interference"],
+      ],
+      keys: {
+        "anti-noise": {
+          meaning: "Anti-noise is a wave deliberately inverted relative to the noise so the two cancel.",
+          here: "The cyan wave. It mirrors the magenta noise and drives the green result toward zero.",
+        },
+        "noise": {
+          meaning: "Noise is the unwanted wave the microphone picks up. Its amplitude determines how much cancellation is possible.",
+          here: "The magenta wave from the left speaker.",
+        },
+        "resultant": {
+          meaning: "The resultant is the sum of the two waves — what your ear actually hears.",
+          here: "The green wave and meter. Flat green means silence; tall green means the waves reinforced each other.",
+        },
+      },
+    },
+    14: {
+      story: [
+        {
+          title: "Measure a river you cannot cross",
+          text: "You are a land surveyor. The river is too wide for a tape measure, so you stake a baseline along the near bank and sight a landmark on the far side from both ends.",
+          focus: "the blue river, the survey poles, and the tree landmark across the water.",
+        },
+        {
+          title: "Two angles and one side define a triangle",
+          text: "The baseline is cyan. The two sightlines are yellow and magenta. The landmark is the third vertex. Once you know two angles, the third follows because a triangle's angles add to 180°.",
+          focus: "the triangle drawn across the water and the dashed width line from the landmark to the baseline.",
+        },
+        {
+          title: "Law of sines finds the missing side",
+          text: "a/sin A = b/sin B = c/sin C. Use the baseline and its opposite angle to find the sightline to the landmark, then take the perpendicular component to get the river width. Drag the angles and watch the triangle reshape.",
+          focus: "the 'River width' HUD chip. It is the perpendicular distance, not the slanted sightline.",
+        },
+      ],
+      math: "The law of sines says side lengths are proportional to the sines of their opposite angles: a/sin A = b/sin B = c/sin C. Two angles and the baseline are enough to solve the triangle.",
+      mathParts: [
+        ["A, B, C", "the three angles of the survey triangle"],
+        ["a, b, c", "the sides opposite those angles"],
+        ["baseline c", "the measured distance along the near bank"],
+        ["river width", "the perpendicular distance from landmark to baseline"],
+      ],
+      keys: {
+        "cosine baseline": {
+          meaning: "The baseline is the known side along the bank. Cosine would give its horizontal projection relative to a sightline.",
+          here: "The cyan line between the two survey poles on the near bank.",
+        },
+        "sine sightline": {
+          meaning: "A sightline is a straight line from an observer to a target. Sine links the angle at the observer to the opposite side.",
+          here: "The yellow and magenta lines from the poles to the tree.",
+        },
+        "survey triangle": {
+          meaning: "The survey triangle is formed by the baseline and the two sightlines. Solving it gives distances you cannot measure directly.",
+          here: "The full triangle over the river, including the dashed width line.",
+        },
+      },
+    },
+    15: {
+      story: [
+        {
+          title: "Plot every possible intercept",
+          text: "You are a coast guard watch officer. A distress call gives a bearing and a range from a station, and your cutter has a different range. Depending on the numbers, there may be no intercept, one, or two.",
+          focus: "the coast guard station, the distress vessel, and the dashed circle of possible cutter positions.",
+        },
+        {
+          title: "The ambiguous case is a geometry puzzle",
+          text: "Drop the altitude h = b sin A from the distress vessel to the bearing line. Compare your cutter range a with h and with b. The dashed circle shows all points at range a; the number of intersections with the bearing line is the number of triangles.",
+          focus: "the dashed circle and the cyan/magenta course lines. Two intersections mean two valid intercepts.",
+        },
+        {
+          title: "How many triangles survive?",
+          text: "If a < h, the circle never reaches the bearing line: zero. If a = h or a ≥ b: one. If h < a < b: two. Drag the ranges and bearing and watch the solution count and geometry change.",
+          focus: "the 'Solutions' HUD chip and the course lines appearing or disappearing.",
+        },
+      ],
+      math: "For SSA data (two sides and a non-included angle), the altitude h = b sin A decides how many triangles exist. Compare the opposite side a with h and b.",
+      mathParts: [
+        ["a", "interceptor range, opposite angle A"],
+        ["b", "distress range"],
+        ["A", "bearing angle at the station"],
+        ["h", "altitude from the distress vessel to the bearing line"],
+      ],
+      keys: {
+        "cosine": {
+          meaning: "Cosine projects a distance onto the horizontal bearing line. It helps find where the altitude meets that line.",
+          here: "Cyan marks the bearing line and the first possible course.",
+        },
+        "sine": {
+          meaning: "Sine gives the perpendicular component of a distance, which becomes the altitude h in the SSA test.",
+          here: "Magenta marks the second possible course and the altitude relationship.",
+        },
+        "possible courses": {
+          meaning: "Each valid triangle corresponds to a different intercept course that satisfies the same range and bearing data.",
+          here: "The cyan and magenta lines from the station to the two possible intersection points.",
+        },
+      },
+    },
+    16: {
+      story: [
+        {
+          title: "Plan a flight with a wind angle",
+          text: "You are a flight planner. An aircraft flies one leg, turns through a known angle, then flies a second leg. You need the straight-line distance between the start and end points.",
+          focus: "the airport, the two route legs, the aircraft, and the closing line.",
+        },
+        {
+          title: "Two sides and the included angle",
+          text: "Leg a is cyan, leg b is yellow, and the closing side is magenta. The included angle C sits between the two legs at the airport. The planes animate along the route so you can see how the triangle is built.",
+          focus: "the magenta closing side. It is opposite angle C and is the distance you need.",
+        },
+        {
+          title: "Law of cosines handles non-right triangles",
+          text: "c² = a² + b² − 2ab cos C. When C = 90°, cosine is zero and the formula becomes Pythagoras. Drag the leg lengths and angle, and watch the closing distance change.",
+          focus: "the 'Closing side c' HUD chip and the magenta line. They solve the navigation triangle.",
+        },
+      ],
+      math: "The law of cosines generalises Pythagoras to any triangle: c² = a² + b² − 2ab cos C, where C is the angle between sides a and b.",
+      mathParts: [
+        ["a, b", "the two known flight legs"],
+        ["C", "included angle between the legs"],
+        ["c", "closing ground distance"],
+        ["−2ab cos C", "the correction that accounts for the non-right angle"],
+      ],
+      keys: {
+        "cosine leg": {
+          meaning: "Cosine of the included angle adjusts the two legs so they close into the correct triangle.",
+          here: "Cyan marks the first leg from the airport.",
+        },
+        "sine leg": {
+          meaning: "The second leg contributes both horizontal and vertical displacement; sine describes its sideways part.",
+          here: "Yellow marks the second leg and its glow.",
+        },
+        "ground track": {
+          meaning: "The ground track is the actual path over the ground after combining the legs and wind.",
+          here: "The magenta closing side between the two route endpoints.",
+        },
+      },
+    },
+    17: {
+      story: [
+        {
+          title: "Keep a 3D surface normal unit-length",
+          text: "You are writing a lighting shader. A surface normal is an arrow perpendicular to the surface; it must have length 1 so the lighting maths stays stable. You know one component and need the other.",
+          focus: "the metallic sphere, the magenta normal arrow, and the orbiting yellow light.",
+        },
+        {
+          title: "Sine and cosine are the two legs",
+          text: "On the unit circle, the normal's horizontal component is cosine and its vertical component is sine. The dashed identity diagram shows a right triangle with hypotenuse 1 and legs sin θ and cos θ.",
+          focus: "the small triangle on the left panel. Its legs are exactly the two normal components.",
+        },
+        {
+          title: "Pythagoras guarantees the identity",
+          text: "Because the hypotenuse is 1, sin²θ + cos²θ = 1. Given sin θ, compute cos θ = √(1 − sin²θ). Drag sin θ and watch the normal stay unit-length while its direction changes.",
+          focus: "the 'Identity' HUD chip. It should stay at 1.0000 no matter where you drag.",
+        },
+      ],
+      math: "The Pythagorean identity sin²θ + cos²θ = 1 comes from a right triangle with hypotenuse 1. It lets you recover one component of a unit normal from the other.",
+      mathParts: [
+        ["sin θ", "vertical component of the unit normal"],
+        ["cos θ", "horizontal component of the unit normal"],
+        ["1", "the length of a normalised normal"],
+        ["sin² + cos²", "Pythagoras applied to the unit circle"],
+      ],
+      keys: {
+        "cosine normal": {
+          meaning: "The cosine component is the normal's horizontal share. Squaring it contributes to the unit-length identity.",
+          here: "Cyan draws the horizontal leg of the identity triangle.",
+        },
+        "sine normal": {
+          meaning: "The sine component is the normal's vertical share. It drives how much the surface faces up or down.",
+          here: "The magenta normal arrow and vertical leg of the triangle.",
+        },
+        "light vector": {
+          meaning: "A light vector points from the surface toward the light. Its angle with the normal determines brightness.",
+          here: "The yellow orbiting light and the rays reaching the sphere.",
+        },
+      },
+    },
+    18: {
+      story: [
+        {
+          title: "Find the launch angle that shoots farthest",
+          text: "You are testing a projectile launcher. Speed is fixed by the mechanism, but you can choose the launch angle. Your goal is to maximise horizontal range on level ground.",
+          focus: "the cannon, the yellow trajectory arc, the target ring, and the distance markers.",
+        },
+        {
+          title: "The trajectory is a parabola",
+          text: "Gravity pulls the projectile down while its horizontal velocity stays constant. That combination traces a parabola. The yellow line is the path; the magenta ball is the projectile at the current moment.",
+          focus: "the target ring where the trajectory lands. The ring moves as the range changes.",
+        },
+        {
+          title: "Double angle explains the 45° sweet spot",
+          text: "Range depends on sin 2θ, which reaches its maximum at 90°, so θ = 45°. Speeds and angles that are symmetric around 45° produce the same range. Drag the angle and watch the range peak.",
+          focus: "the 'Range R' HUD chip and the target ring. Try 30° and 60° — they land in the same place.",
+        },
+      ],
+      math: "Range on level ground is R = v² sin(2θ)/g. The double-angle identity means the range peaks when 2θ = 90°, so the best launch angle is 45°.",
+      mathParts: [
+        ["v", "muzzle speed"],
+        ["θ", "launch angle above horizontal"],
+        ["g", "gravitational acceleration, 9.81 m/s²"],
+        ["sin 2θ", "the double-angle factor that peaks at 45°"],
+      ],
+      keys: {
+        "cosine": {
+          meaning: "Cosine gives the horizontal share of the launch velocity, which stays constant during flight.",
+          here: "Cyan marks the horizontal direction and the range axis.",
+        },
+        "sine": {
+          meaning: "Sine gives the vertical share of the launch velocity, which gravity gradually removes.",
+          here: "Magenta marks the projectile ball and the vertical rise of the path.",
+        },
+        "trajectory": {
+          meaning: "A trajectory is the path a moving object follows through space. Here it is the parabolic arc of the cannonball.",
+          here: "The yellow parabola from the muzzle to the target ring.",
+        },
+      },
+    },
+    19: {
+      story: [
+        {
+          title: "Point a solar panel at the sun",
+          text: "You are commissioning a sun-tracking solar array. The panel produces the most power when its surface faces the sun directly. You need the angle between the panel normal and the incoming sunlight.",
+          focus: "the glowing sun, the tilted panel, the magenta normal arrow, and the yellow cross-product arrow.",
+        },
+        {
+          title: "The cross product builds a perpendicular",
+          text: "The panel edge a and the sun vector b define a plane. Their cross product a × b is perpendicular to both; its direction is the tilt axis and its length is |a||b| sin θ. That is why the yellow cross-product arrow swings as the panel turns.",
+          focus: "the yellow cross-product arrow and the magenta panel normal. They are always at right angles to the panel.",
+        },
+        {
+          title: "Alignment is a dot product in disguise",
+          text: "Output is highest when the panel normal points at the sun, making the angle between them zero. The cross-product magnitude is largest when they are perpendicular. Drag the panel azimuth and watch the output ring and incidence readout.",
+          focus: "the 'Panel output' percentage and the green ring. Peak output means the panel is square to the sun.",
+        },
+      ],
+      math: "The cross product a × b is perpendicular to both vectors. Its magnitude is |a||b| sin θ, where θ is the angle between them. A solar panel's normal should align with the sun vector for maximum output.",
+      mathParts: [
+        ["a", "panel edge vector"],
+        ["b", "sun direction vector"],
+        ["|a × b|", "area/tilt measure, largest when a and b are perpendicular"],
+        ["normal", "the direction the panel surface faces"],
+      ],
+      keys: {
+        "cosine": {
+          meaning: "Cosine measures alignment: it is 1 when two directions point the same way and 0 when they are perpendicular.",
+          here: "Cyan marks the panel edge and the horizontal sun-tracking direction.",
+        },
+        "sine": {
+          meaning: "Sine measures perpendicularity: it is 1 when two directions are at 90° and 0 when they align.",
+          here: "Magenta marks the panel normal and the tilt response.",
+        },
+        "cross product": {
+          meaning: "The cross product produces a vector perpendicular to two inputs. Its length depends on the sine of the angle between them.",
+          here: "The yellow arrow rising from the panel. It defines the tilt axis and grows as the sun moves away from the panel normal.",
+        },
+      },
+    },
+    20: {
+      story: [
+        {
+          title: "Pin a satellite above the Earth",
+          text: "You are in mission control. A GPS satellite is described by latitude, longitude, and altitude. To draw it in a 3D engine, you must convert those spherical coordinates into x, y, z.",
+          focus: "the wireframe globe, the magenta location pin, the yellow radius vector, and the orbiting satellite.",
+        },
+        {
+          title: "Latitude, longitude, and radius",
+          text: "Latitude φ measures how far north or south of the equator you are. Longitude λ measures how far around the planet you are. The radius r is Earth's radius plus altitude. Together they locate any point in 3D space.",
+          focus: "the yellow radius line from Earth's centre to the pin. It is the r in the formula.",
+        },
+        {
+          title: "Spherical to Cartesian",
+          text: "x = r cos φ cos λ, y = r sin φ, and z = r cos φ sin λ. Latitude behaves like an elevation angle; longitude spins you around the y-axis. Drag the latitude and longitude sliders and watch the pin and x/y/z readouts move.",
+          focus: "the x, y, z HUD chips. They are the same location expressed as three perpendicular distances.",
+        },
+      ],
+      math: "Spherical coordinates (r, φ, λ) become Cartesian coordinates: x = r cos φ cos λ, y = r sin φ, z = r cos φ sin λ. Latitude φ is elevation from the equator and longitude λ is rotation around the polar axis.",
+      mathParts: [
+        ["r", "distance from Earth's centre: 6,371 km + altitude"],
+        ["φ", "latitude, measured from the equator"],
+        ["λ", "longitude, measured around the equator"],
+        ["x, y, z", "Cartesian coordinates used by the 3D renderer"],
+      ],
+      keys: {
+        "cosine": {
+          meaning: "Cosine projects the radius onto the equatorial plane, based on latitude.",
+          here: "Cyan is the globe's latitude/longitude grid and the cosine projection that keeps the pin on the surface.",
+        },
+        "sine": {
+          meaning: "Sine gives the vertical component of the radius, which is the y-coordinate.",
+          here: "Magenta marks the location pin and its height above the equator.",
+        },
+        "radius vector": {
+          meaning: "The radius vector points from Earth's centre to the satellite or surface location. Its length is r.",
+          here: "The yellow line from the globe's centre to the pin, plus the dashed beam up to the satellite.",
+        },
+      },
+    },
+  };
+
+  const ONBOARD_KEY = "triglab3d.onboarded.v1";
+
+  /* ------------------------------------------------------------------------
      2. Generative exercises — one distinct generator per module
      Every generator returns a fresh problem with a worked solution.
      ------------------------------------------------------------------------ */
@@ -3509,8 +4318,11 @@
   const exercises = {};
   const choices = {};
   const attempts = {};
+  const storyStep = {};
   let activeTab = 1;
   let dueMode = false;
+  let speechUtterance = null;
+  let speechModule = null;
 
   MODULES.forEach((meta) => {
     const s = {};
@@ -3546,6 +4358,7 @@
   }
 
   function closeModal() {
+    if ($("#modalContent").querySelector("[data-welcome]")) markOnboarded();
     $("#modalBackdrop").hidden = true;
     document.body.style.overflow = "";
   }
@@ -3674,13 +4487,247 @@
   /* ------------------------------------------------------------------------
      8. Module UI construction
      ------------------------------------------------------------------------ */
+  const LEGEND_COLOR_MAP = {
+    "cosine": "#22d3ee",
+    "sine": "#f472b6",
+    "rotation arc": "#facc15",
+    "velocity vector": "#facc15",
+    "tangent height": "#facc15",
+    "refracted beam": "#22d3ee",
+    "slope vector": "#facc15",
+    "cosine X": "#22d3ee",
+    "sine Y": "#f472b6",
+    "tangent": "#facc15",
+    "target": "#facc15",
+    "rafters": "#facc15",
+    "sine EMF": "#f472b6",
+    "coil": "#f472b6",
+    "cosine shadow": "#22d3ee",
+    "sine bob": "#f472b6",
+    "trace": "#22d3ee",
+    "tangent beam": "#facc15",
+    "sine carrier": "#f472b6",
+    "wavefronts": "#22d3ee",
+    "anti-noise": "#22d3ee",
+    "noise": "#f472b6",
+    "resultant": "#4ade80",
+    "cosine baseline": "#22d3ee",
+    "sine sightline": "#facc15",
+    "survey triangle": "#facc15",
+    "possible courses": "#4ade80",
+    "cosine leg": "#22d3ee",
+    "sine leg": "#facc15",
+    "ground track": "#f472b6",
+    "cosine normal": "#22d3ee",
+    "sine normal": "#f472b6",
+    "light vector": "#facc15",
+    "trajectory": "#facc15",
+    "cross product": "#facc15",
+    "radius vector": "#facc15",
+  };
+
   function legendColor(label) {
+    if (LEGEND_COLOR_MAP[label]) return LEGEND_COLOR_MAP[label];
     const l = label.toLowerCase();
     if (l.includes("cos")) return "#22d3ee";
     if (l.includes("sin")) return "#f472b6";
     if (l.includes("vector") || l.includes("tangent") || l.includes("trajectory") || l.includes("beam") || l.includes("cross") || l.includes("path") || l.includes("radius") || l.includes("light")) return "#facc15";
     if (l.includes("target") || l.includes("possible") || l.includes("trace")) return "#4ade80";
     return "#a78bfa";
+  }
+
+  function markOnboarded() {
+    try {
+      localStorage.setItem(ONBOARD_KEY, "1");
+    } catch (err) {
+      /* non-fatal */
+    }
+  }
+
+  function stopStorySpeech() {
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    speechUtterance = null;
+    speechModule = null;
+    document.querySelectorAll('[data-story="listen"]').forEach((btn) => {
+      btn.textContent = "🔊 Listen";
+      btn.classList.remove("is-speaking");
+    });
+  }
+
+  function speakStory(id) {
+    if (!("speechSynthesis" in window)) {
+      toast("This browser cannot read the story aloud. Use the step buttons and text instead.", "info", "🔊");
+      return;
+    }
+    if (speechModule === id && window.speechSynthesis.speaking) {
+      stopStorySpeech();
+      return;
+    }
+    const narr = NARRATIVES[id];
+    if (!narr) return;
+    stopStorySpeech();
+    const step = narr.story[storyStep[id] || 0];
+    const utter = new SpeechSynthesisUtterance(`${step.title}. ${step.text} Look for ${step.focus}`);
+    utter.rate = 0.93;
+    utter.pitch = 1;
+    utter.lang = "en-US";
+    utter.onend = () => {
+      speechModule = null;
+      speechUtterance = null;
+      const panel = $(`[data-narrator="${id}"]`);
+      const btn = panel && panel.querySelector('[data-story="listen"]');
+      if (btn) {
+        btn.textContent = "🔊 Listen";
+        btn.classList.remove("is-speaking");
+      }
+    };
+    utter.onerror = () => stopStorySpeech();
+    speechUtterance = utter;
+    speechModule = id;
+    const panel = $(`[data-narrator="${id}"]`);
+    const btn = panel && panel.querySelector('[data-story="listen"]');
+    if (btn) {
+      btn.textContent = "⏹ Stop";
+      btn.classList.add("is-speaking");
+    }
+    window.speechSynthesis.speak(utter);
+    void speechUtterance;
+  }
+
+  function setStoryStep(id, index, animate = true) {
+    const narr = NARRATIVES[id];
+    const panel = $(`[data-narrator="${id}"]`);
+    if (!narr || !panel) return;
+    if (speechModule === id) stopStorySpeech();
+    const total = narr.story.length;
+    const idx = clamp(Number(index) || 0, 0, total - 1);
+    storyStep[id] = idx;
+    const step = narr.story[idx];
+    const el = panel.querySelector("[data-story-title]");
+    if (el) el.textContent = step.title;
+    const text = panel.querySelector("[data-story-text]");
+    if (text) text.textContent = step.text;
+    const focus = panel.querySelector("[data-story-focus]");
+    if (focus) focus.textContent = step.focus;
+    const count = panel.querySelector("[data-story-count]");
+    if (count) count.textContent = `${idx + 1} / ${total}`;
+    panel.querySelectorAll("[data-story-step]").forEach((dot) => {
+      const on = Number(dot.dataset.storyStep) === idx;
+      dot.classList.toggle("is-active", on);
+      dot.setAttribute("aria-current", on ? "step" : "false");
+    });
+    const prev = panel.querySelector('[data-story="prev"]');
+    if (prev) prev.disabled = idx === 0;
+    const next = panel.querySelector('[data-story="next"]');
+    if (next) next.textContent = idx === total - 1 ? "Replay ↺" : "Next →";
+    if (animate) {
+      panel.classList.remove("is-swapping");
+      void panel.offsetWidth;
+      panel.classList.add("is-swapping");
+    }
+  }
+
+  function openVisualKey(meta) {
+    const narr = NARRATIVES[meta.id];
+    const rows = meta.legend
+      .map((label) => {
+        const guide = (narr && narr.keys[label]) || {};
+        const color = legendColor(label);
+        const meaning = guide.meaning || `A visual shorthand for ${label} in this simulator.`;
+        return `
+          <button class="key-row" type="button" data-legend-jump="${escapeHtml(label)}" data-legend-id="${meta.id}">
+            <span class="legend-swatch" style="background:${color};box-shadow:0 0 10px ${color}"></span>
+            <span><span class="key-row__label">${escapeHtml(label)}</span><span class="key-row__meaning">${escapeHtml(meaning)}</span></span>
+            <span class="key-row__arrow">›</span>
+          </button>`;
+      })
+      .join("");
+    openModal(`
+      <p class="modal-kicker">Colour key · Chapter ${String(meta.id).padStart(2, "0")}</p>
+      <h2>How to read this scene</h2>
+      <p>Colours are labels, not decoration. Tap any key to get the plain-English meaning and what it is doing in this specific simulator.</p>
+      <div class="key-list">${rows}</div>
+      <p class="modal-note">The full palette: <strong style="color:#22d3ee">cyan for cosine / horizontal</strong>, <strong style="color:#f472b6">magenta for sine / vertical</strong>, and <strong style="color:#facc15">yellow for tangent, vectors and measurements</strong>.</p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" type="button" data-modal="close">Back to the lab</button>
+        <button class="btn" type="button" data-story-jump="${meta.id}">Read the story again</button>
+      </div>
+    `);
+  }
+
+  function openLegend(meta, label) {
+    const narr = NARRATIVES[meta.id];
+    const guide = (narr && narr.keys[label]) || {
+      meaning: `A visual shorthand for ${label} in this chapter.`,
+      here: meta.note,
+    };
+    const color = legendColor(label);
+    openModal(`
+      <p class="modal-kicker">Colour key · Chapter ${String(meta.id).padStart(2, "0")}</p>
+      <div class="legend-title">
+        <span class="legend-swatch legend-swatch--lg" style="background:${color};box-shadow:0 0 16px ${color}"></span>
+        <h2>${escapeHtml(label)}</h2>
+      </div>
+      <h3>What it means</h3>
+      <p>${escapeHtml(guide.meaning)}</p>
+      <h3>In this simulator</h3>
+      <p>${escapeHtml(guide.here || meta.note)}</p>
+      <h3>How to use it</h3>
+      <p>Watch that colour while you move the simulator controls. The HUD chips and the worked exercise use the same idea in numbers.</p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" type="button" data-modal="close">Got it</button>
+        <button class="btn" type="button" data-key-all="${meta.id}">See all colour keys</button>
+        <button class="btn" type="button" data-story-jump="${meta.id}">Back to story</button>
+      </div>
+    `);
+  }
+
+  function openFormula(meta) {
+    const narr = NARRATIVES[meta.id];
+    const math = narr ? narr.math : meta.note;
+    const parts = narr && narr.mathParts ? narr.mathParts : [];
+    const rows = parts
+      .map(([symbol, meaning]) => `<tr><td><code>${escapeHtml(symbol)}</code></td><td>${escapeHtml(meaning)}</td></tr>`)
+      .join("");
+    openModal(`
+      <p class="modal-kicker">Formula decoder · Chapter ${String(meta.id).padStart(2, "0")}</p>
+      <h2>${escapeHtml(meta.title)}</h2>
+      <div class="formula-banner">${escapeHtml(meta.formula)}</div>
+      <p>${escapeHtml(math)}</p>
+      ${rows ? `<h3>What each symbol means</h3><table class="formula-table"><thead><tr><th>Symbol</th><th>Plain English</th></tr></thead><tbody>${rows}</tbody></table>` : ""}
+      <h3>Then look for</h3>
+      <p>${escapeHtml((narr && narr.story[2] && narr.story[2].focus) || meta.note)}</p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" type="button" data-modal="close">Got it</button>
+        <button class="btn" type="button" data-story-jump="${meta.id}">Show me in the 3D scene</button>
+      </div>
+    `);
+  }
+
+  function showWelcome() {
+    openModal(`
+      <div data-welcome="1">
+        <p class="modal-kicker">New learner briefing</p>
+        <h2>Welcome to TrigLab 3D</h2>
+        <p>You are the new engineer in a virtual STEM lab. Each chapter gives you a story, a live machine, and a short drill. You do not need to know trigonometry yet — the narrator explains every symbol before you use it.</p>
+        <div class="welcome-grid">
+          <div class="welcome-step"><span>1</span><h3>Read the story</h3><p>Three short steps explain the real-world job, what the colours mean, and what the maths is doing.</p></div>
+          <div class="welcome-step"><span>2</span><h3>Play with the model</h3><p>Move the sliders. Watch the HUD, the formula, and the 3D scene respond together.</p></div>
+          <div class="welcome-step"><span>3</span><h3>Prove it</h3><p>Solve the generated drill. A correct answer schedules your next spaced review.</p></div>
+        </div>
+        <h3>The colour language</h3>
+        <div class="colour-legend">
+          <span><i style="background:#22d3ee"></i><strong>Cyan</strong> — cosine / horizontal share</span>
+          <span><i style="background:#f472b6"></i><strong>Magenta</strong> — sine / vertical share</span>
+          <span><i style="background:#facc15"></i><strong>Yellow</strong> — tangent, vectors, measurements</span>
+        </div>
+        <p class="modal-note">Tap any coloured key in the 3D viewport, or tap the formula pill, for a plain-English pop-up. Use the <strong>Colour key</strong> and <strong>?</strong> buttons any time you feel lost.</p>
+        <div class="modal-actions">
+          <button class="btn btn-primary" type="button" data-modal="welcome-start">Start with Chapter 01</button>
+          <button class="btn" type="button" data-modal="guide">Open the full guide</button>
+        </div>
+      </div>
+    `);
   }
 
   function controlMarkup(meta, ctrl) {
@@ -3754,8 +4801,19 @@
       panel.style.setProperty("--accent", meta.accent);
       panel.hidden = true;
 
+      const narr = NARRATIVES[meta.id];
+      const firstStep = narr.story[0];
       const legend = meta.legend
-        .map((l) => `<span><i style="background:${legendColor(l)};box-shadow:0 0 6px ${legendColor(l)}"></i>${escapeHtml(l)}</span>`)
+        .map(
+          (l) =>
+            `<button class="legend__item" type="button" data-legend="${escapeHtml(l)}" title="Explain ${escapeHtml(l)}"><i style="background:${legendColor(l)};box-shadow:0 0 6px ${legendColor(l)}"></i><span>${escapeHtml(l)}</span></button>`
+        )
+        .join("");
+      const dots = narr.story
+        .map(
+          (_, i) =>
+            `<button class="narrator__dot${i === 0 ? " is-active" : ""}" type="button" data-story-step="${i}" aria-label="Story step ${i + 1}" aria-current="${i === 0 ? "step" : "false"}"></button>`
+        )
         .join("");
 
       panel.innerHTML = `
@@ -3772,8 +4830,33 @@
               <p class="module-sub">${escapeHtml(meta.blurb)}</p>
             </div>
           </div>
-          <div class="module-hero__formula">${escapeHtml(meta.formula)}</div>
+          <button class="module-hero__formula" type="button" data-formula="${meta.id}" aria-label="Decode the formula: ${escapeHtml(meta.formula)}">
+            <span>${escapeHtml(meta.formula)}</span>
+            <span class="formula-explain">explain</span>
+          </button>
         </div>
+        <section class="narrator" data-narrator="${meta.id}" aria-label="Guided story" aria-live="polite">
+          <div class="narrator__icon" aria-hidden="true">${meta.icon}</div>
+          <div class="narrator__body">
+            <div class="narrator__top">
+              <span class="narrator__kicker">Guided story</span>
+              <span class="narrator__count" data-story-count>1 / ${narr.story.length}</span>
+              <div class="narrator__dots">${dots}</div>
+              <div class="narrator__links">
+                <button type="button" class="narrator__guide" data-story="keys">Colour key</button>
+                <button type="button" class="narrator__guide" data-story="guide">Lab guide</button>
+              </div>
+            </div>
+            <h2 class="narrator__title" data-story-title>${escapeHtml(firstStep.title)}</h2>
+            <p class="narrator__text" data-story-text>${escapeHtml(firstStep.text)}</p>
+            <p class="narrator__focus"><span>Look for</span><span data-story-focus>${escapeHtml(firstStep.focus)}</span></p>
+          </div>
+          <div class="narrator__actions">
+            <button class="btn btn-subtle narrator__btn" type="button" data-story="prev" disabled>← Back</button>
+            <button class="btn narrator__btn narrator__btn--next" type="button" data-story="next">Next →</button>
+            <button class="btn btn-subtle narrator__btn" type="button" data-story="listen">🔊 Listen</button>
+          </div>
+        </section>
         <div class="module-grid">
           <div class="viewport-card">
             <div class="viewport-slot" data-slot="${meta.id}"></div>
@@ -3813,6 +4896,40 @@
           </div>
         </div>`;
       host.appendChild(panel);
+    });
+
+    // Guided story, colour-key, and formula interactions (delegated once).
+    host.addEventListener("click", (e) => {
+      const legendBtn = e.target.closest("[data-legend]");
+      if (legendBtn) {
+        const panel = legendBtn.closest(".module-panel");
+        const id = Number(panel.dataset.tab);
+        openLegend(MODULES[id - 1], legendBtn.dataset.legend);
+        return;
+      }
+      const formulaBtn = e.target.closest("[data-formula]");
+      if (formulaBtn) {
+        openFormula(MODULES[Number(formulaBtn.dataset.formula) - 1]);
+        return;
+      }
+      const stepBtn = e.target.closest("[data-story-step]");
+      if (stepBtn) {
+        const panel = stepBtn.closest("[data-narrator]");
+        setStoryStep(Number(panel.dataset.narrator), Number(stepBtn.dataset.storyStep));
+        return;
+      }
+      const actionEl = e.target.closest("[data-story]");
+      if (!actionEl) return;
+      const narrator = actionEl.closest("[data-narrator]");
+      const id = Number(narrator.dataset.narrator);
+      const action = actionEl.dataset.story;
+      if (action === "prev") setStoryStep(id, (storyStep[id] || 0) - 1);
+      else if (action === "next") {
+        const total = NARRATIVES[id].story.length;
+        setStoryStep(id, (storyStep[id] || 0) + 1 >= total ? 0 : (storyStep[id] || 0) + 1);
+      } else if (action === "listen") speakStory(id);
+      else if (action === "keys") openVisualKey(MODULES[id - 1]);
+      else if (action === "guide") openHelp();
     });
 
     // Tab interactions
@@ -3883,6 +5000,7 @@
     });
 
     MODULES.forEach((meta) => {
+      setStoryStep(meta.id, 0, false);
       updateHud(meta.id);
       updateReadout(meta.id);
       renderExercise(meta.id);
@@ -4259,6 +5377,7 @@
      ------------------------------------------------------------------------ */
   function activateTab(id, opts = {}) {
     id = clamp(Math.round(id), 1, TAB_COUNT);
+    stopStorySpeech();
     activeTab = id;
     $$(".module-panel").forEach((p) => (p.hidden = Number(p.dataset.tab) !== id));
     $$(".tab-btn").forEach((b) => {
@@ -4391,7 +5510,16 @@
     openModal(`
       <p class="modal-kicker">Operating manual</p>
       <h2>How TrigLab 3D works</h2>
-      <p>Twenty chapters pair a live Three.js engineering model with a fresh generative drill. Understanding the model makes the drill easier; the drill schedules the next review.</p>
+      <p>You are the new engineer in a virtual STEM lab. Every chapter gives you a story, a live machine, and a short drill. You can start with zero trigonometry knowledge.</p>
+      <h3>Guided story</h3>
+      <p>Each chapter opens with a three-step narrator: <strong>the mission</strong>, <strong>what the colours mean</strong>, and <strong>what the formula is doing</strong>. Use <strong>Back / Next</strong> to move through it. Tap <strong>🔊 Listen</strong> to hear the current step read aloud.</p>
+      <h3>Colour keys and formula decoder</h3>
+      <p>The chips in the top-right of the 3D viewport are buttons. Tap one for a plain-English explanation of that colour in this specific simulator. Tap the formula pill next to the chapter title for a symbol-by-symbol decoder. On a phone, use the <strong>Colour key</strong> button above the 3D scene.</p>
+      <ul>
+        <li><strong style="color:#22d3ee">Cyan</strong> — cosine / horizontal share.</li>
+        <li><strong style="color:#f472b6">Magenta</strong> — sine / vertical share.</li>
+        <li><strong style="color:#facc15">Yellow</strong> — tangent, vectors, beams, and measurements.</li>
+      </ul>
       <h3>Spaced repetition ladder</h3>
       <table>
         <thead><tr><th>Level</th><th>Review count</th><th>Next interval</th></tr></thead>
@@ -4415,6 +5543,7 @@
       <p>Built with <strong>OpenCode</strong> and <strong>DeepSeek V4.1 Flash</strong>. 3D powered by Three.js r128 + OrbitControls. Static, read-only GitHub Pages compatible — no backend, no build step.</p>
       <div class="modal-actions">
         <button class="btn btn-primary" type="button" data-modal="close">Start practicing</button>
+        <button class="btn" type="button" data-story-jump="${activeTab}">Open this chapter's story</button>
         <button class="btn" type="button" data-modal="save">💾 Save progress file</button>
       </div>
     `);
@@ -4455,6 +5584,27 @@
       if (e.target === $("#modalBackdrop")) closeModal();
     });
     $("#modalContent").addEventListener("click", (e) => {
+      const legendJump = e.target.closest("[data-legend-jump]");
+      if (legendJump) {
+        openLegend(MODULES[Number(legendJump.dataset.legendId) - 1], legendJump.dataset.legendJump);
+        return;
+      }
+      const keyAll = e.target.closest("[data-key-all]");
+      if (keyAll) {
+        openVisualKey(MODULES[Number(keyAll.dataset.keyAll) - 1]);
+        return;
+      }
+      const storyJump = e.target.closest("[data-story-jump]");
+      if (storyJump) {
+        const id = clamp(Number(storyJump.dataset.storyJump), 1, TAB_COUNT);
+        closeModal();
+        activateTab(id, { focus: false });
+        setTimeout(() => {
+          const narrator = $(`[data-narrator="${id}"]`);
+          if (narrator) narrator.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 320);
+        return;
+      }
       const btn = e.target.closest("[data-modal]");
       if (!btn) return;
       const action = btn.dataset.modal;
@@ -4463,6 +5613,18 @@
         saveProgressFile();
         closeModal();
       } else if (action === "reset-confirm") resetProgress();
+      else if (action === "welcome-start") {
+        markOnboarded();
+        closeModal();
+        activateTab(1, { focus: false });
+        setTimeout(() => {
+          const narrator = $('[data-narrator="1"]');
+          if (narrator) narrator.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 320);
+      } else if (action === "guide") {
+        markOnboarded();
+        openHelp();
+      }
     });
 
     document.addEventListener("keydown", (e) => {
@@ -4519,7 +5681,17 @@
 
       // Greet returning learners once the boot screen clears.
       const due = dueCount();
+      let needsBriefing = false;
+      try {
+        needsBriefing = state.totalReviews === 0 && !localStorage.getItem(ONBOARD_KEY);
+      } catch (err) {
+        needsBriefing = state.totalReviews === 0;
+      }
       setTimeout(() => {
+        if (needsBriefing) {
+          showWelcome();
+          return;
+        }
         if (due > 0) toast(`${due} chapter${due === 1 ? "" : "s"} due today. Use “Due Today” to focus.`, "warn", "🔔");
         else if (state.totalReviews > 0) toast("Welcome back — progress restored from this browser.", "ok", "✓");
       }, 1250);
