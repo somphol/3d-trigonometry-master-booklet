@@ -1,10 +1,21 @@
-# TrigLab 3D — 20-Tab Trigonometry Master Booklet & SRS Learning Studio
+<div align="center">
 
-A static, production-ready trigonometry laboratory built with **vanilla HTML5, CSS3, ES6 JavaScript, and Three.js r128**. Twenty interactive 3D engineering simulators are paired with fresh generative exercises and a portable spaced-repetition system. No build step, no backend, no dependencies beyond CDN scripts.
+<img src="docs/social-card.png" alt="TrigLab 3D — 20-Tab Trigonometry Master Booklet & SRS Learning Studio" width="100%" />
 
-**Live demo:** <https://somphol.github.io/3d-trigonometry-master-booklet/>
+# TrigLab 3D
 
-[![TrigLab 3D — Angles & Rotations](screenshot.png)](https://somphol.github.io/3d-trigonometry-master-booklet/)
+**20-Tab Trigonometry Master Booklet & SRS Learning Studio**
+
+Twenty interactive 3D engineering simulators, generative exercises, and a portable spaced-repetition system — in one static site.
+
+[![Live demo](https://img.shields.io/badge/live_demo-online-8b5cf6?style=flat-square)](https://somphol.github.io/3d-trigonometry-master-booklet/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-8b5cf6?style=flat-square)](LICENSE)
+
+**[Try it live →](https://somphol.github.io/3d-trigonometry-master-booklet/)**
+
+</div>
+
+---
 
 ## What it is
 
