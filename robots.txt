@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://somphol.github.io/3d-trigonometry-master-booklet/sitemap.xml
