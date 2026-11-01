@@ -19,6 +19,8 @@ TrigLab 3D is a complete 20-chapter trigonometry booklet where each chapter has:
 
 The UI uses a dark STEM-laboratory theme with glassmorphism panels, cyan/magenta/yellow signal colours, and a scrollable 20-tab curriculum rail. It is fully responsive and works as a read-only GitHub Pages site.
 
+**Colour semantics are chapter-specific.** Cyan and magenta only mean cosine/sine when the chapter is actually projecting a direction into components. Elsewhere the key names the real object (a ray, a trace, a panel edge). Chapter 1 makes this explicit: the robot joints are neutral, while the cyan 0° axis, magenta 90° axis, and yellow rotation arc carry the mathematical meaning.
+
 ## Learning design
 
 The lesson structure is deliberately aligned with evidence-based practice:
@@ -31,6 +33,7 @@ The lesson structure is deliberately aligned with evidence-based practice:
 | **Retrieval practice & spacing** | Every chapter ends in a generative checkpoint aligned to objective 3; successful retrieval schedules the next review at 1, 3, 7, or 30 days. |
 | **Misconception-aware feedback** | Wrong answers surface a chapter-specific **Common trap** note, such as swapping sine/cosine or forgetting to normalize an angle. |
 | **Metacognition** | The agenda states the success criteria, and the explain-it-back prompt asks learners to restate the idea in their own words. |
+| **Embodied practice** | Chapter 1 is a working pick-and-place game: set the base angle, lower the arm, grab the ball from one bin, carry it to the other, and drop it. The game uses the same angle concepts as the checkpoint. |
 
 Research consulted:
 
@@ -52,17 +55,18 @@ No prior trigonometry is assumed.
 - **Formula decoder** — tap the formula pill beside the chapter title for a symbol-by-symbol explanation in everyday language.
 - **Progressive hints and common-trap feedback** — hints move from concept to formula to first step, and wrong answers name the misconception rather than only saying “try again.”
 - **Explain it back** — after a correct checkpoint, restate the idea in your own words and compare with a model answer.
+- **Pick-and-place challenge** — Chapter 1 is playable: use the base, shoulder, and elbow to grab a glowing ball from one bin and drop it into the other. The game reuses the chapter's angle concepts and keeps score.
 - **One-time welcome briefing** — first-time visitors get a short introduction to the agenda → story → model → checkpoint loop.
 
 [![Learning agenda and guided story](screenshot.png)](screenshot.png) [![Control guide pop-up](screenshot-control.png)](screenshot-control.png)
 
-[![Checkpoint aligned to objective 3](screenshot-checkpoint.png)](screenshot-checkpoint.png)
+[![Checkpoint aligned to objective 3](screenshot-checkpoint.png)](screenshot-checkpoint.png) [![Pick-and-place challenge](screenshot-arm.png)](screenshot-arm.png)
 
 ## Curriculum map
 
 | # | Chapter | Real-world simulator | Core idea |
 |---:|---|---|---|
-| 01 | Angles & Rotations | Robotic Arm Pick-and-Place | Standard-position angles and signed rotations |
+| 01 | Angles & Rotations | Robotic Arm Pick-and-Place | Standard-position angles, signed rotations, and a playable ball-transfer game |
 | 02 | Radians vs. Degrees | Vehicle Speedometer & Tire RPM | `v = ωr`, RPM → rad/s → km/h |
 | 03 | SOH CAH TOA Basics | Skyscraper Clinometer Estimator | `tan θ = opposite / adjacent` |
 | 04 | Reciprocal Ratios | Optical Refraction & Lens Design | Reciprocal identities and Snell's law |
@@ -139,6 +143,7 @@ If the 3D engine cannot load, the drills and SRS still work and a clear fallback
 ├── screenshot-welcome.png     # First-visit learner briefing
 ├── screenshot-control.png     # Per-control explanation pop-up
 ├── screenshot-checkpoint.png  # Checkpoint aligned to objective 3
+├── screenshot-arm.png         # Chapter 01 pick-and-place challenge
 ├── screenshot-key.png         # Plain-English colour-key pop-up
 ├── screenshot-formula.png     # Formula decoder
 ├── screenshot-mobile.png      # Responsive guided-story layout
@@ -166,6 +171,8 @@ The shipped build was exercised in headless Chrome across all 20 tabs:
 - 100/100 story steps were walked through; 60/60 colour-key pop-ups and 20/20 formula decoders opened with the correct labels and plain-English content.
 - 60/60 control-guide pop-ups were verified, and the live coach updated with the correct observation after real slider changes.
 - 20/20 generative checkpoints solved through the real UI; grading, progressive hints, misconception feedback, explain-it-back, scores, review counts, status transitions, and timestamps were verified.
+- Chapter 1's pick-and-place game was played through to a successful placement: grab, carry, drop, score increment, HUD update, and the next-ball swap all verified.
+- Chapter 7 reference angles, Chapter 4 reciprocal-ratio checkpoints, and Chapter 19 dot-product/cross-product outputs were spot-checked against their formulas.
 - JSON import round-trip verified, including score, badges, due count, and `localStorage` persistence.
 - No uncaught exceptions or console errors.
 - Responsive layout checked at 390 × 844 and 1600 × 1200.

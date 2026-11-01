@@ -1,21 +1,21 @@
 {
   "project": "3d-trigonometry-master-booklet",
-  "description": "TrigLab 3D — a research-informed, 20-tab interactive trigonometry booklet with learning agendas, five-step guided stories, per-control explanations, live coaching, engineering simulators, checkpoint drills, and a portable spaced-repetition system.",
+  "description": "TrigLab 3D — a research-informed, 20-tab interactive trigonometry booklet with learning agendas, five-step guided stories, per-control explanations, live coaching, accurate chapter-specific colour keys, engineering simulators, a playable ball-transfer game, checkpoint drills, and a portable spaced-repetition system.",
   "build": {
     "startedAt": "2026-10-31T23:31:24.546000Z",
-    "completedAt": "2026-11-01T00:51:34Z",
-    "durationSeconds": 4809,
-    "durationHuman": "1h 20m 9s",
+    "completedAt": "2026-11-01T01:24:51Z",
+    "durationSeconds": 6807,
+    "durationHuman": "1h 53m 27s",
     "timezone": "UTC"
   },
   "tokens": {
-    "input": 597891,
-    "output": 188067,
-    "reasoning": 111948,
-    "cacheRead": 58246912,
+    "input": 743792,
+    "output": 236508,
+    "reasoning": 173697,
+    "cacheRead": 127564928,
     "cacheWrite": 1583,
-    "total": 897906,
-    "totalWithCache": 59146401,
+    "total": 1153997,
+    "totalWithCache": 128720508,
     "note": "Snapshot from the OpenCode session record when the project was packaged. total = input + output + reasoning. Cache reads/writes are reported separately because they are a subset of context usage."
   },
   "cost": {
@@ -49,6 +49,10 @@
     "hintLadderLevels": 3,
     "misconceptionFeedback": 20,
     "teachBackPrompt": true,
+    "pickPlaceGame": true,
+    "chapterSpecificColourSemantics": true,
+    "reciprocalRatiosCheckpoint": true,
+    "solarPanelFixedTilt": true,
     "narration": "Web Speech API (SpeechSynthesis), opt-in Listen button",
     "firstVisitBriefing": true,
     "srsIntervalsDays": {
@@ -70,7 +74,8 @@
       "Cognitive Load Theory and worked examples",
       "Retrieval practice and spaced review",
       "Misconception-aware feedback",
-      "Self-explanation / teach-back"
+      "Self-explanation / teach-back",
+      "Embodied game-based practice"
     ],
     "references": [
       "https://www.pattan.net/getmedia/9059e5f0-7edc-4391-8c8e-ebaf8c3c95d6/CRA_Methods0117",
@@ -90,16 +95,16 @@
         "lines": 165
       },
       "style.css": {
-        "bytes": 54297,
-        "lines": 1800
+        "bytes": 55161,
+        "lines": 1823
       },
       "script.js": {
-        "bytes": 315770,
-        "lines": 6613
+        "bytes": 335898,
+        "lines": 7052
       }
     },
-    "totalLines": 8578,
-    "totalBytes": 378562
+    "totalLines": 9040,
+    "totalBytes": 399554
   },
   "verification": {
     "browser": "Headless Chrome 156 (SwiftShader WebGL)",
@@ -111,6 +116,7 @@
     "learningAgendasVerified": 20,
     "guidedStoryStepsVerified": 100,
     "colourKeyPopupsVerified": 60,
+    "legendSemanticsAudited": 20,
     "controlGuidesVerified": 60,
     "formulaDecodersVerified": 20,
     "checkpointDrillsVerified": 20,
@@ -118,6 +124,10 @@
     "hintLadderVerified": true,
     "misconceptionFeedbackVerified": true,
     "teachBackVerified": true,
+    "pickPlaceGameVerified": true,
+    "chapter7ReferenceAnglesVerified": true,
+    "chapter4ReciprocalCheckpointVerified": true,
+    "chapter19DotProductCrossProductVerified": true,
     "welcomeBriefingVerified": true,
     "exercisesSolved": 20,
     "exerciseGradingVerified": true,
@@ -125,7 +135,8 @@
     "importExportRoundTripVerified": true,
     "consoleErrors": 0,
     "liveDeploymentVerified": true,
-    "liveUrlStatus": 200
+    "liveUrlStatus": 200,
+    "progressFileDownloadVerified": true
   },
   "artifacts": [
     "index.html",
@@ -138,6 +149,7 @@
     "screenshot-welcome.png",
     "screenshot-control.png",
     "screenshot-checkpoint.png",
+    "screenshot-arm.png",
     "screenshot-key.png",
     "screenshot-formula.png",
     "screenshot-mobile.png",

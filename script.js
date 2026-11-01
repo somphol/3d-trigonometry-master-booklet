@@ -16,6 +16,20 @@
   const SRS_INTERVALS = { 1: 1, 2: 3, 3: 7, 4: 30 }; // days
   const SRS_LEVEL_NAMES = { 1: "L1 · Learn", 2: "L2 · Practicing", 3: "L3 · Reinforcing", 4: "L4 · Mastered" };
 
+  const ARM_GAME = {
+    held: false,
+    phase: "ready",
+    placed: 0,
+    source: "A",
+    target: "B",
+    message: "Ball in Bin A (base yaw −30°). Grab it, carry it to Bin B (−150°), and drop it.",
+    distance: null,
+    onChange: null,
+    onTick: null,
+  };
+
+  const SOLAR_TILT = 30; // fixed panel tilt in degrees
+
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
@@ -33,6 +47,35 @@
 
   function tolFor(answer) {
     return Math.max(0.005, Math.abs(answer) * 0.0025);
+  }
+
+  // Scalar solar-panel geometry so the HUD works even if Three.js fails to load.
+  function solarMetrics(s) {
+    const t = rad(SOLAR_TILT);
+    const p = rad(s.panelAz);
+    const e = rad(s.elevation);
+    const az = rad(s.azimuth);
+    const nx = Math.cos(t) * Math.cos(p);
+    const ny = Math.sin(t);
+    const nz = Math.cos(t) * Math.sin(p);
+    const bx = Math.cos(e) * Math.cos(az);
+    const by = Math.sin(e);
+    const bz = Math.cos(e) * Math.sin(az);
+    const dot = clamp(nx * bx + ny * by + nz * bz, -1, 1);
+
+    // Rotate the panel's local +X edge by the quaternion that takes world +Y to n.
+    const qw = 1 + ny;
+    const qx = nz;
+    const qz = -nx;
+    const qn = Math.hypot(qw, qx, qz) || 1;
+    const w = qw / qn;
+    const x = qx / qn;
+    const z = qz / qn;
+    const ax = 1 - 2 * z * z;
+    const ay = 2 * w * z;
+    const az2 = 2 * x * z;
+    const cross = Math.hypot(ay * bz - az2 * by, az2 * bx - ax * bz, ax * by - ay * bx);
+    return { cross, dot, incidence: deg(Math.acos(dot)) };
   }
 
   function relTime(iso) {
@@ -61,23 +104,23 @@
       icon: "🦾",
       accent: "#22d3ee",
       formula: "θf = (θ0 + Δθ) mod 360°",
-      blurb: "Drive a 3-axis pick-and-place arm and watch positive / negative rotations resolve to a single standard-position angle.",
-      note: "Rotate the base, shoulder and elbow. Every joint angle is measured counter-clockwise from its local zero axis.",
-      legend: ["cosine", "sine", "rotation arc"],
+      blurb: "Drive a 3-axis pick-and-place arm, pick up a glowing ball, and drop it into the target bin while you normalize signed rotations.",
+      note: "Rotate the base, shoulder, and elbow to reach the ball. Bin A is at base yaw −30°; Bin B is at −150°. Grab, carry, and drop to score.",
+      legend: ["0° axis (cosine)", "90° axis (sine)", "rotation arc"],
       controls: [
         { key: "base", label: "Base yaw", min: -160, max: 160, step: 1, value: 30, unit: "°" },
         { key: "shoulder", label: "Shoulder", min: -70, max: 70, step: 1, value: 26, unit: "°" },
         { key: "elbow", label: "Elbow", min: -100, max: 100, step: 1, value: 48, unit: "°" },
         { key: "grip", label: "Gripper", min: 0, max: 1, step: 0.01, value: 0.55, unit: "" },
-        { key: "auto", label: "Demo motion", type: "toggle", value: true, wide: true },
+        { key: "auto", label: "Idle glow", type: "toggle", value: true, wide: true },
       ],
       hud: (s) => [
-        ["Base", `${fmt(s.base, 0)}°`],
-        ["Shoulder", `${fmt(s.shoulder, 0)}°`],
-        ["Elbow", `${fmt(s.elbow, 0)}°`],
+        ["Balls placed", String(ARM_GAME.placed)],
+        ["Grip", ARM_GAME.held ? "holding" : ARM_GAME.phase === "dropping" ? "dropping" : "open"],
+        ["Base yaw", `${fmt(s.base, 0)}°`],
         ["Standard θ", `${fmt(norm360(s.base), 0)}°`],
       ],
-      readout: (s) => `TCP target ${(2.0 + 1.1 * Math.sin(rad(s.shoulder + s.elbow))).toFixed(2)} m`,
+      readout: () => `Ball ${ARM_GAME.source} → Bin ${ARM_GAME.target} · ${ARM_GAME.placed} placed`,
       build: buildArmScene,
       exercise: exAngles,
     },
@@ -91,7 +134,7 @@
       formula: "v = ωr = (2πN/60)r",
       blurb: "Spin a tire at highway RPM and connect revolutions, angular velocity and linear road speed in real units.",
       note: "The tire's angular velocity ω converts RPM to rad/s. Linear speed is ω × radius, then converted to km/h.",
-      legend: ["cosine", "sine", "velocity vector"],
+      legend: ["wheel rotation", "speedometer", "velocity vector"],
       controls: [
         { key: "rpm", label: "Tire speed", min: 0, max: 1200, step: 10, value: 620, unit: " rpm" },
         { key: "radius", label: "Tire radius", min: 26, max: 52, step: 1, value: 36, unit: " cm" },
@@ -117,7 +160,7 @@
       formula: "tan θ = opposite / adjacent",
       blurb: "Aim a clinometer at a tower crown from street level; use the tangent ratio to turn one angle into a building height.",
       note: "The horizontal distance is the adjacent side; the tower above eye level is the opposite side. Add eye height at the end.",
-      legend: ["cosine", "sine", "tangent height"],
+      legend: ["ground distance (cosine side)", "tower height (sine side)", "tangent sightline"],
       controls: [
         { key: "distance", label: "Ground distance", min: 10, max: 80, step: 1, value: 36, unit: " m" },
         { key: "angle", label: "Clinometer angle", min: 12, max: 60, step: 1, value: 36, unit: "°" },
@@ -143,7 +186,7 @@
       formula: "csc θ = 1/sin θ · sec θ = 1/cos θ · cot θ = 1/tan θ",
       blurb: "Trace a laser through a lens interface and use Snell's law — a ratio cousin of cosecant and secant — to bend light correctly.",
       note: "Refraction follows n₁ sin θ₁ = n₂ sin θ₂. Beyond the critical angle, total internal reflection locks the beam inside the glass.",
-      legend: ["cosine", "sine", "refracted beam"],
+      legend: ["incident ray", "refracted ray", "normal"],
       controls: [
         { key: "incidence", label: "Incidence θ₁", min: 5, max: 80, step: 1, value: 42, unit: "°" },
         { key: "n2", label: "Lens index n₂", min: 1.0, max: 2.2, step: 0.01, value: 1.5, unit: "" },
@@ -177,7 +220,7 @@
       formula: "θ = arctan(rise / run) = arcsin(rise / length)",
       blurb: "Design a wheelchair ramp, then recover its incline angle from rise and run — the essential inverse-tangent inspection move.",
       note: "ADA guidance caps a ramp at roughly 4.8° (1:12). The inspector computes θ = arctan(rise/run) and flags unsafe geometry.",
-      legend: ["cosine", "sine", "slope vector"],
+      legend: ["ramp run (cosine side)", "ramp rise (sine side)", "safety status"],
       controls: [
         { key: "angle", label: "Ramp incline", min: 2, max: 18, step: 0.5, value: 6.5, unit: "°" },
         { key: "auto", label: "Roll test", type: "toggle", value: true, wide: true },
@@ -227,14 +270,14 @@
       formula: "All · Sine · Tangent · Cosine",
       blurb: "Sweep an ATC radar and classify each target's trigonometric signs by quadrant using the ASTC rule.",
       note: "Quadrant I: all positive. II: sine only. III: tangent only. IV: cosine only. The radar's reference angle is the acute angle to the X-axis.",
-      legend: ["cosine", "sine", "target"],
+      legend: ["x-axis (cosine)", "y-axis (sine)", "target"],
       controls: [
         { key: "angle", label: "Target bearing", min: 0, max: 360, step: 1, value: 135, unit: "°" },
         { key: "radius", label: "Target range", min: 1, max: 5, step: 0.1, value: 3.2, unit: " km" },
         { key: "sweep", label: "Radar sweep", type: "toggle", value: true, wide: true },
       ],
       hud: (s) => {
-        const ref = Math.abs(((s.angle + 180) % 180) - 90) === 90 ? 0 : Math.abs(((s.angle + 90) % 180) - 90);
+        const ref = refAngle(s.angle);
         return [
           ["Bearing", `${fmt(s.angle, 0)}°`],
           ["Quadrant", quadrantOf(s.angle)],
@@ -256,7 +299,7 @@
       formula: "30-60-90 → 1 : √3 : 2 · 45-45-90 → 1 : 1 : √2",
       blurb: "Frame a gable roof truss and let 30-60-90 / 45-45-90 ratios compute rafter length and rise without a calculator.",
       note: "Changing span and pitch rebuilds the truss in real time. The rafters are the hypotenuse; half-span is adjacent; rise is opposite.",
-      legend: ["cosine", "sine", "rafters"],
+      legend: ["half-span (cosine side)", "ridge rise (sine side)", "rafters"],
       controls: [
         { key: "span", label: "Building span", min: 4, max: 12, step: 0.5, value: 8, unit: " m" },
         { key: "pitch", label: "Roof pitch", min: 20, max: 60, step: 1, value: 35, unit: "°" },
@@ -282,7 +325,7 @@
       formula: "v(t) = Vp sin(2πft) · Vrms = Vp/√2",
       blurb: "Spin a coil through a magnetic field and unroll its induced EMF into the sine wave that powers the grid.",
       note: "The rotating coil's vertical projection is sin θ. Peak voltage, frequency and RMS all update as you turn the generator controls.",
-      legend: ["cosine", "sine EMF", "coil"],
+      legend: ["magnetic field", "sine EMF", "coil"],
       controls: [
         { key: "peak", label: "Peak voltage", min: 50, max: 340, step: 1, value: 170, unit: " V" },
         { key: "freq", label: "Frequency", min: 40, max: 70, step: 1, value: 50, unit: " Hz" },
@@ -308,7 +351,7 @@
       formula: "x(t) = A cos(ωt) · ω = √(g/L)",
       blurb: "Release a clock pendulum and trace its horizontal shadow: a pure cosine motion unrolled across time.",
       note: "The bob's horizontal displacement is L sin θ. At small angles this approximates simple harmonic cosine motion with period 2π√(L/g).",
-      legend: ["cosine shadow", "sine bob", "trace"],
+      legend: ["cosine trace", "pendulum bob", "swing angle"],
       controls: [
         { key: "length", label: "Pendulum length", min: 1, max: 4, step: 0.05, value: 2, unit: " m" },
         { key: "amplitude", label: "Swing amplitude", min: 8, max: 60, step: 1, value: 28, unit: "°" },
@@ -334,7 +377,7 @@
       formula: "tan θ = height / distance · θ → 90° ⇒ ∞",
       blurb: "Sweep a lighthouse beam across the shoreline and watch the distance projection explode as the beam approaches vertical.",
       note: "At 90° the tangent is undefined: the beam is parallel to the tower and never meets the shoreline. The dashed asymptote marks that limit.",
-      legend: ["cosine", "sine", "tangent beam"],
+      legend: ["shore distance (cosine side)", "lamp height (sine side)", "tangent beam"],
       controls: [
         { key: "height", label: "Tower height", min: 20, max: 90, step: 1, value: 55, unit: " m" },
         { key: "distance", label: "Shore distance", min: 60, max: 280, step: 1, value: 140, unit: " m" },
@@ -360,7 +403,7 @@
       formula: "y = A sin(2πt/T) · λ = c/f",
       blurb: "Tune an AM/FM transmitter and watch carrier amplitude, period and wavelength respond on the antenna array.",
       note: "Period is the reciprocal of frequency. Wavelength λ = 300 / f(MHz) metres. AM and FM occupy very different bands — the HUD flags the selected band.",
-      legend: ["cosine", "sine carrier", "wavefronts"],
+      legend: ["wavefronts", "carrier wave", "receiver"],
       controls: [
         { key: "frequency", label: "Carrier frequency", min: 0.5, max: 108, step: 0.1, value: 98.7, unit: " MHz" },
         { key: "amplitude", label: "Carrier amplitude", min: 1, max: 5, step: 0.1, value: 3, unit: " V" },
@@ -412,7 +455,7 @@
       formula: "a/sin A = b/sin B = c/sin C",
       blurb: "Stake a baseline on the near bank, sight a landmark across the river, and triangulate a width you cannot tape-measure.",
       note: "The baseline c is opposite angle C. Law of sines gives AC = c sin B / sin C; the river width is AC sin A.",
-      legend: ["cosine baseline", "sine sightline", "survey triangle"],
+      legend: ["baseline", "sightlines", "river width"],
       controls: [
         { key: "baseline", label: "Baseline c", min: 40, max: 140, step: 1, value: 80, unit: " m" },
         { key: "angleA", label: "Sight angle A", min: 30, max: 80, step: 1, value: 55, unit: "°" },
@@ -446,7 +489,7 @@
       formula: "h = b sin A · compare a with h and b",
       blurb: "A distress bearing plus two ranges can produce zero, one, or two intercept triangles. Plot every possibility before you launch.",
       note: "Drop the altitude h = b sin A. If a < h there is no triangle; a = h gives one right triangle; h < a < b gives two; a ≥ b gives one.",
-      legend: ["cosine", "sine", "possible courses"],
+      legend: ["bearing line", "possible courses", "altitude"],
       controls: [
         { key: "a", label: "Interceptor range a", min: 3, max: 14, step: 0.1, value: 8, unit: " km" },
         { key: "b", label: "Distress range b", min: 5, max: 16, step: 0.1, value: 10, unit: " km" },
@@ -476,7 +519,7 @@
       formula: "c² = a² + b² − 2ab cos C",
       blurb: "Combine two flight legs with an included wind angle and solve the closing side — the navigation workhorse for non-right triangles.",
       note: "The route triangle has legs a and b with included angle C. The closing ground distance is c = √(a² + b² − 2ab cos C).",
-      legend: ["cosine leg", "sine leg", "ground track"],
+      legend: ["leg a", "leg b", "ground track"],
       controls: [
         { key: "legA", label: "Leg a", min: 100, max: 450, step: 5, value: 280, unit: " km" },
         { key: "legB", label: "Leg b", min: 80, max: 380, step: 5, value: 220, unit: " km" },
@@ -537,7 +580,7 @@
       formula: "sin 2θ = 2 sin θ cos θ · R = v² sin 2θ / g",
       blurb: "Aim the cannon and use the double-angle identity to discover why 45° maximizes range — then optimize the shot.",
       note: "Range depends on sin 2θ, which peaks at 90°, so θ = 45°. Launch speed and gravity set the scale; the yellow parabola updates live.",
-      legend: ["cosine", "sine", "trajectory"],
+      legend: ["horizontal velocity", "projectile", "trajectory"],
       controls: [
         { key: "speed", label: "Muzzle speed", min: 15, max: 60, step: 1, value: 32, unit: " m/s" },
         { key: "angle", label: "Launch angle θ", min: 10, max: 80, step: 1, value: 45, unit: "°" },
@@ -562,24 +605,26 @@
       accent: "#fbbf24",
       formula: "|a × b| = |a||b| sin θ · n̂ = a × b / |a × b|",
       blurb: "Align a solar panel to the sun and compute the cross product that defines its surface normal and tilt axis.",
-      note: "The cross product is perpendicular to both the panel edge a and the sun vector b. Its magnitude is |a||b| sin θ, peaking when the vectors are perpendicular.",
-      legend: ["cosine", "sine", "cross product"],
+      note: "The panel has a fixed 30° tilt. Panel azimuth rotates it around the vertical axis; the sun's azimuth and elevation set the incoming direction. Output is the dot product of the panel normal and the sun vector; the cross product gives the tilt axis.",
+      legend: ["panel edge", "panel normal", "cross product"],
       controls: [
         { key: "azimuth", label: "Sun azimuth", min: 0, max: 360, step: 1, value: 135, unit: "°" },
         { key: "elevation", label: "Sun elevation", min: 8, max: 85, step: 1, value: 45, unit: "°" },
         { key: "panelAz", label: "Panel azimuth", min: 0, max: 360, step: 1, value: 135, unit: "°" },
       ],
       hud: (s) => {
-        const cross = Math.abs(Math.sin(rad(s.azimuth - s.panelAz)) * Math.cos(rad(s.elevation)));
-        const eff = Math.max(0, Math.cos(rad(s.elevation - 30)) * Math.cos(rad(s.azimuth - s.panelAz)));
+        const m = solarMetrics(s);
         return [
-          ["|a × b|", `${fmt(cross, 3)}`],
-          ["Incidence", `${fmt(Math.abs(s.azimuth - s.panelAz), 1)}°`],
-          ["Panel output", `${fmt(eff * 100, 1)} %`],
+          ["|a × b|", `${fmt(m.cross, 3)}`],
+          ["Incidence", `${fmt(m.incidence, 1)}°`],
+          ["Panel output", `${fmt(Math.max(0, m.dot) * 100, 1)} %`],
           ["Sun elevation", `${fmt(s.elevation, 0)}°`],
         ];
       },
-      readout: (s) => `Panel tracks ${fmt(s.panelAz, 0)}° · sun ${fmt(s.azimuth, 0)}° · cross sin Δ = ${fmt(Math.sin(rad(s.azimuth - s.panelAz)), 3)}`,
+      readout: (s) => {
+        const m = solarMetrics(s);
+        return `Panel tilt ${SOLAR_TILT}° · panel ${fmt(s.panelAz, 0)}° · sun ${fmt(s.azimuth, 0)}° / ${fmt(s.elevation, 0)}° · output ${fmt(Math.max(0, m.dot) * 100, 1)}%`;
+      },
       build: buildSolarScene,
       exercise: exCrossProduct,
     },
@@ -593,7 +638,7 @@
       formula: "x = r cos φ cos λ · y = r sin φ · z = r cos φ sin λ",
       blurb: "Pin a location on a 3D Earth, convert latitude/longitude/altitude into Cartesian coordinates, and track a satellite overhead.",
       note: "Latitude φ is the elevation from the equatorial plane and longitude λ is the azimuth around Y. The radius includes Earth's 6,371 km plus altitude.",
-      legend: ["cosine", "sine", "radius vector"],
+      legend: ["globe grid", "location pin", "radius vector"],
       controls: [
         { key: "lat", label: "Latitude φ", min: -80, max: 80, step: 0.5, value: 13.7, unit: "°" },
         { key: "lon", label: "Longitude λ", min: -180, max: 180, step: 0.5, value: 100.5, unit: "°" },
@@ -627,17 +672,17 @@
       story: [
         {
           title: "Your first shift as a robot operator",
-          text: "You are in charge of a pick-and-place arm on a factory floor. The controller only accepts a final orientation between 0° and 360°, even when the arm has spun several times in different directions.",
-          focus: "the blue turntable, the two arm segments, and the yellow gripper at the end.",
+          text: "You are in charge of a pick-and-place arm on a factory floor. Your shift task is to pick up the glowing ball and drop it into the other bin. The controller also only accepts a final orientation between 0° and 360°, even when the arm has spun several times in different directions.",
+          focus: "the glowing ball, the two bins, and the arm's gripper. Bin A is at base yaw −30°; Bin B is at −150°.",
         },
         {
           title: "What the colours are telling you",
-          text: "Cyan is the scene's cosine channel: it marks the base, shoulder, and the horizontal part of motion. Magenta is the sine channel: it highlights the elbow and the vertical reach. Yellow is the angle and pickup channel.",
-          focus: "the glowing ring at each joint. Those rings are the rotations you are about to command.",
+          text: "Sine and cosine are not attached to the joints. The joints are just structure. The cyan floor line is the 0° reference axis, the magenta floor line is the 90° axis, and the yellow arc measures how far the base has turned from 0°. Cosine and sine are projections onto those axes when you need to split a direction into components.",
+          focus: "the floor axes and the yellow arc — not the robot's joint colours.",
         },
         {
           title: "Turn a spin into one clean angle",
-          text: "If the arm starts at 168° and turns −106°, add the two values to get 62°. The 'mod 360°' rule simply means adding or subtracting full circles until the result sits between 0° and 360°. Drag Base yaw and watch the cyan HUD update.",
+          text: "If the arm starts at 168° and turns −106°, add the two values to get 62°. The 'mod 360°' rule simply means adding or subtracting full circles until the result sits between 0° and 360°. Drag Base yaw and watch the Standard θ HUD update.",
           focus: "the yellow arc on the turntable. It shows the base's angle measured counter-clockwise from the front.",
         },
       ],
@@ -671,7 +716,7 @@
         },
         {
           title: "Two ways to measure the same turn",
-          text: "Degrees and radians both measure rotation. One full revolution is 360° or 2π radians. The cyan arrow shows forward road direction, the magenta needle shows the wheel turning, and the yellow arrow shows the resulting velocity.",
+          text: "Degrees and radians both measure rotation. One full revolution is 360° or 2π radians. Cyan marks the wheel itself, magenta marks the speedometer needle, and yellow is the velocity arrow showing the car's road speed.",
           focus: "the yellow velocity arrow. It grows as the tire's linear speed increases.",
         },
         {
@@ -712,7 +757,7 @@
         {
           title: "A right triangle hiding in the city",
           text: "The horizontal distance is the adjacent side (cyan). The height above your eye is the opposite side (magenta). The sight line to the roof is the hypotenuse (yellow), and the clinometer angle sits between the horizontal and that sight line.",
-          focus: "the dashed horizontal cyan line and the dashed vertical yellow line. They form a right angle at the tower base.",
+          focus: "the dashed horizontal cyan line and the dashed vertical magenta line. They form a right angle at the tower base.",
         },
         {
           title: "Tangent turns an angle into height",
@@ -760,12 +805,12 @@
           focus: "the refraction readout and the cyan ray. If the HUD says TIR, the ray turns yellow and reflects inside the glass.",
         },
       ],
-      math: "n₁ sin θ₁ = n₂ sin θ₂. The refractive index n measures how strongly a material slows and bends light. Solve for sin θ₂, then take the inverse sine.",
+      math: "csc θ = 1/sin θ, sec θ = 1/cos θ, and cot θ = 1/tan θ. These are reciprocal identities: they flip a ratio without changing the angle. The lens note separately applies Snell's law, n₁ sin θ₁ = n₂ sin θ₂.",
       mathParts: [
-        ["n₁", "refractive index of the source medium (air = 1.00, water = 1.33)"],
-        ["n₂", "refractive index of the lens"],
-        ["θ₁", "incidence angle measured from the normal"],
-        ["θ₂", "refraction angle measured from the normal"],
+        ["csc θ", "1 ÷ sin θ"],
+        ["sec θ", "1 ÷ cos θ"],
+        ["cot θ", "1 ÷ tan θ"],
+        ["Snell's law", "the lens relation n₁ sin θ₁ = n₂ sin θ₂"],
       ],
       keys: {
         "cosine": {
@@ -947,7 +992,7 @@
         {
           title: "Generate electricity with a spinning coil",
           text: "You are on the grid operations team. A coil rotates inside a magnetic field, and the changing angle induces a voltage. Your job is to understand why the output is a sine wave.",
-          focus: "the magenta coil, the two magnetic poles, and the waveform panel behind the generator.",
+          focus: "the violet coil, the two magnetic poles, and the waveform panel behind the generator.",
         },
         {
           title: "A rotating loop projects a sine wave",
@@ -974,7 +1019,7 @@
         },
         "sine EMF": {
           meaning: "The induced electromotive force follows the vertical projection of the rotating coil, producing a sine wave.",
-          here: "The magenta coil and the magenta waveform. The wave's height is the instantaneous voltage at that moment.",
+          here: "The violet coil and the magenta waveform. The wave's height is the instantaneous voltage at that moment.",
         },
         "coil": {
           meaning: "The coil is the loop of wire rotating in the magnetic field. Its changing orientation is what generates voltage.",
@@ -1032,7 +1077,7 @@
         {
           title: "The beam forms a right triangle",
           text: "The tower height is the opposite side (magenta), the shoreline distance is the adjacent side (cyan), and the beam is the hypotenuse (yellow). The depression angle opens between the horizontal and the beam.",
-          focus: "the dashed cyan distance line and the dashed vertical height line. The tangent ratio compares them.",
+          focus: "the dashed cyan distance line and the dashed magenta height line. The tangent ratio compares them.",
         },
         {
           title: "Tangent approaches infinity at 90°",
@@ -1151,8 +1196,8 @@
         },
         {
           title: "Two angles and one side define a triangle",
-          text: "The baseline is cyan. The two sightlines are yellow and magenta. The landmark is the third vertex. Once you know two angles, the third follows because a triangle's angles add to 180°.",
-          focus: "the triangle drawn across the water and the dashed width line from the landmark to the baseline.",
+          text: "The baseline is cyan, both sightlines are yellow, and the measured width is magenta. The landmark is the third vertex. Once you know two angles, the third follows because a triangle's angles add to 180°.",
+          focus: "the triangle drawn across the water and the dashed magenta width line from the landmark to the baseline.",
         },
         {
           title: "Law of sines finds the missing side",
@@ -1192,7 +1237,7 @@
         {
           title: "The ambiguous case is a geometry puzzle",
           text: "Drop the altitude h = b sin A from the distress vessel to the bearing line. Compare your cutter range a with h and with b. The dashed circle shows all points at range a; the number of intersections with the bearing line is the number of triangles.",
-          focus: "the dashed circle and the cyan/magenta course lines. Two intersections mean two valid intercepts.",
+          focus: "the dashed circle and the two magenta course lines. Two intersections mean two valid intercepts.",
         },
         {
           title: "How many triangles survive?",
@@ -1218,7 +1263,7 @@
         },
         "possible courses": {
           meaning: "Each valid triangle corresponds to a different intercept course that satisfies the same range and bearing data.",
-          here: "The cyan and magenta lines from the station to the two possible intersection points.",
+          here: "The two magenta lines from the station to the possible intersection points.",
         },
       },
     },
@@ -1356,7 +1401,7 @@
         },
         {
           title: "Alignment is a dot product in disguise",
-          text: "Output is highest when the panel normal points at the sun, making the angle between them zero. The cross-product magnitude is largest when they are perpendicular. Drag the panel azimuth and watch the output ring and incidence readout.",
+          text: "Output is highest when the panel normal points at the sun, making the incidence angle zero. Separately, the edge/sun cross product is largest when the panel edge is perpendicular to the sun vector. Drag the panel azimuth and watch the output ring, incidence, and cross-product readouts.",
           focus: "the 'Panel output' percentage and the green ring. Peak output means the panel is square to the sun.",
         },
       ],
@@ -1424,6 +1469,165 @@
     },
   };
 
+  const LABEL_GUIDES = {
+    "0° axis (cosine)": {
+      meaning: "A reference direction for measuring angles. Cosine measures how much of a direction lies along this axis.",
+      here: "The cyan floor line points along the robot's zero direction. Base yaw starts at 0° on this line.",
+    },
+    "90° axis (sine)": {
+      meaning: "The direction 90° counter-clockwise from the reference axis. Sine measures the perpendicular share of a direction.",
+      here: "The magenta floor line marks the robot's 90° direction. It is an axis, not a joint property.",
+    },
+    "x-axis (cosine)": {
+      meaning: "The horizontal axis. Cosine is the x-coordinate, so its sign is positive on the right half of the radar.",
+      here: "The cyan horizontal axis dividing Quadrants I/IV from II/III.",
+    },
+    "y-axis (sine)": {
+      meaning: "The vertical axis. Sine is the y-coordinate, so its sign is positive in the upper half of the radar.",
+      here: "The magenta vertical axis dividing Quadrants I/II from III/IV.",
+    },
+    "wheel rotation": {
+      meaning: "The angle a wheel turns through. One full revolution is 360° or 2π radians.",
+      here: "The cyan tire and rim. Watch it spin; the rpm slider sets how fast it turns.",
+    },
+    "speedometer": {
+      meaning: "A gauge that converts rotation rate into road speed.",
+      here: "The magenta needle and circular dial. It rises as the tire spins faster.",
+    },
+    "ground distance (cosine side)": {
+      meaning: "The horizontal distance from observer to tower. It is the adjacent side of the sight triangle.",
+      here: "The cyan horizontal line on the street. Cosine would compare it with the sight-line length.",
+    },
+    "shore distance (cosine side)": {
+      meaning: "The horizontal distance from the lighthouse to the shoreline. It is the adjacent side of the beam triangle.",
+      here: "The cyan horizontal distance line across the water.",
+    },
+    "lamp height (sine side)": {
+      meaning: "The height of the lighthouse lamp above the water. It is the opposite side of the beam triangle.",
+      here: "The dashed magenta vertical line from the lamp down to the waterline.",
+    },
+    "tower height (sine side)": {
+      meaning: "The vertical height above eye level. It is the opposite side of the sight triangle.",
+      here: "The magenta vertical line and rooftop marker. Sine would compare it with the sight-line length.",
+    },
+    "tangent sightline": {
+      meaning: "The line from eye to rooftop. Its slope is the tangent of the clinometer angle.",
+      here: "The yellow sight line from the tripod to the roof.",
+    },
+    "incident ray": {
+      meaning: "The incoming light ray travelling toward the surface.",
+      here: "The magenta laser beam approaching the lens.",
+    },
+    "refracted ray": {
+      meaning: "The light ray after it enters the new material and changes direction.",
+      here: "The cyan beam inside and beyond the lens.",
+    },
+    "normal": {
+      meaning: "An imaginary line perpendicular to the surface. Both refraction angles are measured from it.",
+      here: "The dashed line through the lens centre. It is not a light ray.",
+    },
+    "ramp run (cosine side)": {
+      meaning: "The horizontal distance covered by the ramp. It is the adjacent side of the incline triangle.",
+      here: "The cyan horizontal line at the base of the ramp.",
+    },
+    "ramp rise (sine side)": {
+      meaning: "The vertical height gained by the ramp. It is the opposite side of the incline triangle.",
+      here: "The yellow vertical line at the high end of the ramp.",
+    },
+    "safety status": {
+      meaning: "A colour-coded judgement of whether the incline is safe. Green is compliant, yellow is marginal, red is too steep.",
+      here: "The ramp deck changes colour as the incline crosses the 4.8° guideline.",
+    },
+    "half-span (cosine side)": {
+      meaning: "Half the building width. It is the adjacent side of each roof triangle.",
+      here: "The cyan horizontal measuring line inside the truss.",
+    },
+    "ridge rise (sine side)": {
+      meaning: "The vertical height from wall top to ridge. It is the opposite side of the roof triangle.",
+      here: "The magenta ridge and the vertical measuring line above the walls.",
+    },
+    "magnetic field": {
+      meaning: "The region where magnetic forces act. The rotating coil cuts through these field lines.",
+      here: "The cyan arrows between the north and south poles.",
+    },
+    "cosine trace": {
+      meaning: "Horizontal displacement plotted against time. A pendulum's shadow produces a cosine-shaped trace.",
+      here: "The cyan wave on the right-hand panel.",
+    },
+    "pendulum bob": {
+      meaning: "The swinging mass at the end of the rod. Its angle from vertical determines horizontal displacement.",
+      here: "The magenta sphere at the bottom of the pendulum.",
+    },
+    "swing angle": {
+      meaning: "The angle between the pendulum rod and vertical. Horizontal displacement is L sin θ.",
+      here: "The yellow arc at the pivot.",
+    },
+    "carrier wave": {
+      meaning: "The steady high-frequency sine wave that carries a radio signal.",
+      here: "The magenta waveform crossing the scene.",
+    },
+    "receiver": {
+      meaning: "The radio receiver that displays the selected band and tuning.",
+      here: "The small display box on the right.",
+    },
+    "baseline": {
+      meaning: "A measured distance between two survey points. It is one known side of the triangle.",
+      here: "The cyan line between the two survey poles.",
+    },
+    "sightlines": {
+      meaning: "Lines from each end of the baseline to the landmark. Their angles let you solve the triangle.",
+      here: "The two yellow lines crossing the river.",
+    },
+    "river width": {
+      meaning: "The perpendicular distance from the landmark to the baseline. It is the unknown distance you cannot measure directly.",
+      here: "The dashed magenta line from the tree to the baseline.",
+    },
+    "survey triangle": {
+      meaning: "The triangle formed by the baseline and two sightlines. Solving it gives an inaccessible distance.",
+      here: "The full triangle over the river, including the dashed width line.",
+    },
+    "bearing line": {
+      meaning: "A line drawn from the station along the distress vessel's bearing.",
+      here: "The cyan line from the coast guard station.",
+    },
+    "altitude": {
+      meaning: "The perpendicular distance from a vertex to the opposite side. In SSA it is h = b sin A.",
+      here: "The yellow dashed perpendicular from the distress vessel to the bearing line.",
+    },
+    "leg a": {
+      meaning: "The first known side of the route triangle.",
+      here: "The cyan first flight leg from the airport.",
+    },
+    "leg b": {
+      meaning: "The second known side of the route triangle.",
+      here: "The yellow second flight leg.",
+    },
+    "horizontal velocity": {
+      meaning: "The part of launch velocity that stays constant because gravity acts vertically.",
+      here: "The cyan horizontal direction and range axis.",
+    },
+    "projectile": {
+      meaning: "The object moving through the air under gravity.",
+      here: "The magenta ball following the parabolic path.",
+    },
+    "panel edge": {
+      meaning: "A vector along the panel's edge. It is one of the two inputs to the cross product.",
+      here: "The cyan edge arrow on the solar panel.",
+    },
+    "panel normal": {
+      meaning: "A vector perpendicular to the panel surface. It should point at the sun for maximum output.",
+      here: "The magenta arrow rising from the panel.",
+    },
+    "globe grid": {
+      meaning: "The latitude and longitude reference lines on a globe.",
+      here: "The cyan wireframe grid on the Earth.",
+    },
+    "location pin": {
+      meaning: "The point at the chosen latitude and longitude.",
+      here: "The magenta pin and pulse ring on the globe.",
+    },
+  };
+
   const ONBOARD_KEY = "triglab3d.onboarded.v1";
 
   /* ------------------------------------------------------------------------
@@ -1440,29 +1644,29 @@
       },
       tryIt: {
         title: "Your turn: predict the wrap-around",
-        text: "Set Base yaw to 120°, then to −120°. Before you look at the HUD, predict the standard angle for each. You should get 120° and 240°. The HUD always reports a counter-clockwise angle from 0° to 360°, which is what 'standard position' means.",
+        text: "Set Base yaw to 120°, then to −120°. Before you look at the HUD, predict the standard angle for each. You should get 120° and 240°. The HUD always reports a counter-clockwise angle from 0° to 360°, which is what 'standard position' means. Then set Base yaw to −30° to face Bin A and try the pick-and-place challenge.",
         focus: "the yellow arc and the 'Standard θ' HUD chip. The arc should always agree with the HUD.",
       },
       controls: {
         base: {
           what: "Rotates the entire arm around its vertical axis. Positive values turn counter-clockwise; negative values turn clockwise.",
-          watch: "The cyan base, yellow angle arc, and 'Standard θ' HUD all move together. The HUD wraps the result into 0°–360°.",
+          watch: "The cyan 0° axis, yellow angle arc, and 'Standard θ' HUD all agree. The HUD wraps the result into 0°–360°.",
         },
         shoulder: {
           what: "Tilts the upper arm toward or away from the base, changing the arm's vertical reach.",
-          watch: "The magenta elbow rises or falls, and the TCP reach readout changes as the arm extends.",
+          watch: "The elbow joint rises or falls, and the gripper distance to the ball changes as the arm extends.",
         },
         elbow: {
           what: "Bends the forearm at the elbow, changing how close the gripper comes to the base.",
-          watch: "The magenta elbow joint and the yellow gripper move; the reach readout responds.",
+          watch: "The elbow joint and gripper move; the distance-to-ball readout responds.",
         },
         grip: {
-          what: "Opens or closes the two gripper fingers.",
-          watch: "At 0 the white fingers are wide open; at 1 they pinch together around the crate.",
+          what: "Previews the gripper opening. The Grab button closes the fingers automatically when you are close enough.",
+          watch: "At 0 the white fingers are wide open; at 1 they pinch closed. Try Grab near the ball to see the automatic close.",
         },
         auto: {
-          what: "Adds a small idle animation without changing the angles you command.",
-          watch: "The gripper light and target beacon pulse, while the HUD stays tied to your slider values.",
+          what: "Adds a subtle idle glow without changing the game or the angles you command.",
+          watch: "The gripper light pulses, while the Grab/Drop challenge and HUD stay under your control.",
         },
       },
     },
@@ -1523,14 +1727,14 @@
     4: {
       concept: "Sine ratios at a refracting surface",
       bigIdea: {
-        title: "The trig idea: light bends because its speed changes",
-        text: "When light enters glass or water, it changes speed and bends. The refractive index measures how strongly a material bends light. Snell's law compares the sine of the incoming angle with the sine of the outgoing angle, measured from the normal.",
-        focus: "the dashed normal through the lens. Both light angles are measured from that line, not from the glass surface.",
+        title: "The trig idea: every ratio has a reciprocal partner",
+        text: "Cosecant is 1 divided by sine, secant is 1 divided by cosine, and cotangent is 1 divided by tangent. A reciprocal is not a new angle or a new side; it flips the ratio. Optical engineers use these pairs to describe how a ray leans away from the normal.",
+        focus: "the lens geometry. The reciprocal ratios describe the same triangle from the opposite point of view.",
       },
       tryIt: {
-        title: "Your turn: make the ray bend more",
-        text: "Set incidence to 20°, then 60°. Predict whether the refracted ray bends farther from the normal or closer to it. Increasing n₂ should pull the cyan ray toward the dashed normal, and the θ₂ readout should shrink.",
-        focus: "the cyan refracted ray and the 'θ₂ refraction' HUD chip. They should tell the same story.",
+        title: "Your turn: find a cosecant without a calculator",
+        text: "Set the incidence angle to 30°. Predict csc 30° before checking the HUD. sin 30° = 0.5, so csc 30° = 2. Then try 45°: sin 45° = √2/2, so csc 45° = √2 ≈ 1.414.",
+        focus: "the 'csc θ₁' HUD chip and the incidence angle. The reciprocal should match 1 ÷ sin θ.",
       },
       controls: {
         incidence: {
@@ -1652,7 +1856,7 @@
       bigIdea: {
         title: "The trig idea: a spinning coil draws a sine wave",
         text: "A spinning coil produces a voltage that rises and falls like a sine wave. The coil's angle controls its vertical projection, which is the instantaneous voltage. Frequency controls how quickly the wave repeats, not how tall it is.",
-        focus: "the rotating magenta coil and the waveform. One full coil turn should produce one full wave cycle.",
+        focus: "the rotating violet coil and the waveform. One full coil turn should produce one full wave cycle.",
       },
       tryIt: {
         title: "Your turn: squeeze the wave",
@@ -1926,8 +2130,8 @@
       },
       tryIt: {
         title: "Your turn: align the panel",
-        text: "Set the sun azimuth equal to the panel azimuth. Predict the cross-product magnitude. It should be near zero because the vectors align. Then move the sun 90° away and watch the yellow arrow grow.",
-        focus: "the '|a × b|' and 'Panel output' HUD chips. Alignment raises output but lowers the cross product.",
+        text: "Set sun elevation to 30° and make the sun azimuth equal to the panel azimuth. The panel normal now points at the sun, so output should approach 100% and incidence should approach 0°. The cross product |a × b| should be near 1, because the panel edge a is perpendicular to the sun vector b. Then rotate the panel 90° away and watch output fall.",
+        focus: "the '|a × b|', 'Incidence', and 'Panel output' HUD chips. Output uses the dot product; the cross product gives the tilt axis.",
       },
       controls: {
         azimuth: {
@@ -2006,11 +2210,11 @@
     },
     4: {
       objectives: [
-        "Explain refraction and measure both light angles from the normal.",
-        "Apply n₁ sin θ₁ = n₂ sin θ₂ to a lens interface.",
-        "Predict whether a ray bends toward the normal or undergoes total internal reflection.",
+        "Explain csc, sec, and cot as reciprocals of sin, cos, and tan.",
+        "Read the lens geometry and identify where sine ratios appear in Snell's law.",
+        "Evaluate a reciprocal trig ratio for a given angle.",
       ],
-      checkpoint: "Calculate the refracted angle for a given incidence angle.",
+      checkpoint: "Evaluate csc, sec, or cot from a given angle.",
     },
     5: {
       objectives: [
@@ -2146,7 +2350,7 @@
     1: "Adding the starting angle and rotation but forgetting to wrap the result back into 0°–360°. A negative final value is not a standard-position angle.",
     2: "Using degrees in the radian formula, or forgetting to convert the tire radius from centimetres to metres.",
     3: "Multiplying by tan θ but forgetting to add eye height, or using sine when the question asks for tangent.",
-    4: "Measuring the incidence and refraction angles from the glass surface instead of from the normal.",
+    4: "Confusing a reciprocal with an inverse function. csc θ = 1/sin θ, not arcsin θ; it flips the ratio, not the angle.",
     5: "Using rise ÷ ramp length (sine) when the inspector needs rise ÷ run (tangent).",
     6: "Swapping sine and cosine: cosine is the x-coordinate; sine is the y-coordinate.",
     7: "Assuming a value is positive because the reference angle is positive. The quadrant supplies the sign.",
@@ -2239,23 +2443,26 @@
   }
 
   function exReciprocal() {
-    const medium = pick(["air", "water"]);
-    const n1 = medium === "water" ? 1.33 : 1.0;
-    const n2 = pick([1.5, 1.6, 1.8, 2.0].filter((n) => n > n1));
-    const theta1 = ri(22, 58);
-    const answer = deg(Math.asin((n1 * Math.sin(rad(theta1))) / n2));
+    const theta = ri(20, 70);
+    const fn = pick(["csc", "sec", "cot"]);
+    const sinV = Math.sin(rad(theta));
+    const cosV = Math.cos(rad(theta));
+    const tanV = Math.tan(rad(theta));
+    const answer = fn === "csc" ? 1 / sinV : fn === "sec" ? 1 / cosV : 1 / tanV;
+    const base = fn === "csc" ? "sin" : fn === "sec" ? "cos" : "tan";
+    const baseValue = fn === "csc" ? sinV : fn === "sec" ? cosV : tanV;
     return {
-      prompt: `Light in ${medium} (n₁ = ${n1.toFixed(2)}) strikes a lens (n₂ = ${n2.toFixed(2)}) at an incidence angle of ${theta1}°. Find the refraction angle θ₂.`,
-      context: "Apply Snell's law n₁ sin θ₁ = n₂ sin θ₂. The ratio of sines is the same kind of reciprocal relationship that connects sine, cosecant and secant.",
-      givens: [["n₁", n1.toFixed(2)], ["n₂", n2.toFixed(2)], ["θ₁", `${theta1}°`]],
-      unit: "°",
+      prompt: `An optical design note uses the reciprocal ratio ${fn} θ for a ray at θ = ${theta}°. Compute ${fn} ${theta}°.`,
+      context: `Reciprocal ratios flip the original ratio: csc θ = 1/sin θ, sec θ = 1/cos θ, and cot θ = 1/tan θ. The lens HUD reports csc θ₁ for the current incidence angle.`,
+      givens: [["θ", `${theta}°`], ["reciprocal", `${fn} θ`]],
+      unit: "",
       answer,
       tol: tolFor(answer),
-      hint: "sin θ₂ = (n₁/n₂) sin θ₁. Take the inverse sine at the end.",
+      hint: `${fn} θ = 1 / ${base} θ. First evaluate ${base} ${theta}°, then divide 1 by it.`,
       solution: [
-        `n₁ sin θ₁ = ${n1.toFixed(2)} × sin ${theta1}° = ${fmt(n1 * Math.sin(rad(theta1)), 4)}.`,
-        `sin θ₂ = ${fmt(n1 * Math.sin(rad(theta1)), 4)} / ${n2.toFixed(2)} = ${fmt((n1 * Math.sin(rad(theta1))) / n2, 4)}.`,
-        `θ₂ = arcsin(${fmt((n1 * Math.sin(rad(theta1))) / n2, 4)}) = <code>${fmt(answer, 1)}°</code>.`,
+        `${base} ${theta}° = ${fmt(baseValue, 4)}.`,
+        `${fn} ${theta}° = 1 / ${fmt(baseValue, 4)}.`,
+        `${fn} ${theta}° = <code>${fmt(answer, 3)}</code>.`,
       ],
     };
   }
@@ -2866,13 +3073,17 @@
 
   /* 01 — Robotic arm ------------------------------------------------------- */
   function buildArmScene(accent) {
-    const base = sceneBase(accent, [9.5, 8, 13], [0, 2.3, 0]);
+    const base = sceneBase(accent, [11, 8, 16], [0, 1.5, 0]);
     const scene = base.scene;
 
-    // Floor pad and safety ring
+    // The only cyan/magenta marks in this chapter are mathematical axes.
+    arrow(scene, [1, 0, 0], [0, 0.05, 0], 4.2, C.cyan, { head: 0.32, headWidth: 0.14 });
+    arrow(scene, [0, 0, -1], [0, 0.05, 0], 4.2, C.magenta, { head: 0.32, headWidth: 0.14 });
+
+    // Floor pad and safety ring. Joints are deliberately neutral.
     cyl(scene, 2.3, 2.55, 0.32, C.slate, [0, 0.16, 0]);
-    torus(scene, 2.42, 0.045, C.cyan, [0, 0.34, 0], { rot: [Math.PI / 2, 0, 0], e: 0.6 });
-    const padRing = torus(scene, 2.8, 0.025, C.yellow, [0, 0.02, 0], { rot: [Math.PI / 2, 0, 0], opacity: 0.45 });
+    torus(scene, 2.42, 0.045, 0x9fb8cc, [0, 0.34, 0], { rot: [Math.PI / 2, 0, 0], e: 0.25 });
+    const padRing = torus(scene, 2.8, 0.025, 0x2a5878, [0, 0.02, 0], { rot: [Math.PI / 2, 0, 0], opacity: 0.45 });
     padRing.scale.setScalar(1);
 
     // Turret
@@ -2880,90 +3091,225 @@
     turret.position.y = 0.34;
     scene.add(turret);
     cyl(turret, 1.2, 1.5, 1.0, 0x183653, [0, 0.5, 0]);
-    cyl(turret, 0.82, 0.98, 0.26, C.cyan, [0, 1.1, 0], { e: 0.5 });
-    const baseArc = line(arcPoints(0, 0.36, 0, 2.9, 0, 0, 48, "xz"), C.yellow, 0.85);
+    cyl(turret, 0.82, 0.98, 0.26, 0x8fb3cc, [0, 1.1, 0], { e: 0.22 });
+    const baseArc = line([], C.yellow, 0.9);
     scene.add(baseArc);
 
     // Shoulder joint
     const shoulder = new THREE.Group();
     shoulder.position.y = 1.25;
     turret.add(shoulder);
-    sph(shoulder, 0.44, C.cyan, [0, 0, 0], { e: 0.55 });
+    sph(shoulder, 0.44, 0x9bdcff, [0, 0, 0], { e: 0.3 });
     box(shoulder, 0.44, 2.7, 0.48, 0x2b6cb0, [0, 1.35, 0]);
-    box(shoulder, 0.18, 2.45, 0.18, 0x9bdcff, [0.24, 1.36, 0], { e: 0.55, metal: 0.7 });
+    box(shoulder, 0.18, 2.45, 0.18, 0xd8ecff, [0.24, 1.36, 0], { e: 0.3, metal: 0.7 });
 
     // Elbow joint
     const elbow = new THREE.Group();
     elbow.position.y = 2.7;
     shoulder.add(elbow);
-    sph(elbow, 0.36, C.magenta, [0, 0, 0], { e: 0.6 });
+    sph(elbow, 0.36, 0xd9e7f2, [0, 0, 0], { e: 0.3 });
     box(elbow, 0.34, 2.2, 0.36, 0x2b6cb0, [0, 1.1, 0]);
-    box(elbow, 0.14, 1.95, 0.14, 0xc084fc, [0.21, 1.08, 0], { e: 0.45 });
+    box(elbow, 0.14, 1.95, 0.14, 0xd8ecff, [0.21, 1.08, 0], { e: 0.3 });
 
     // Wrist + gripper
     const wrist = new THREE.Group();
     wrist.position.y = 2.2;
     elbow.add(wrist);
-    box(wrist, 0.7, 0.28, 0.62, C.yellow, [0, 0.03, 0], { e: 0.4 });
-    const fingerL = box(wrist, 0.12, 0.62, 0.18, 0xf8fafc, [-0.22, 0.44, 0], { e: 0.2, metal: 0.8 });
-    const fingerR = box(wrist, 0.12, 0.62, 0.18, 0xf8fafc, [0.22, 0.44, 0], { e: 0.2, metal: 0.8 });
-    const tipLight = new THREE.PointLight(C.yellow, 0.9, 4, 2);
+    box(wrist, 0.7, 0.28, 0.62, 0xdfefff, [0, 0.03, 0], { e: 0.2 });
+    const fingerL = box(wrist, 0.12, 0.62, 0.18, 0xf8fafc, [-0.22, 0.44, 0], { e: 0.1, metal: 0.8 });
+    const fingerR = box(wrist, 0.12, 0.62, 0.18, 0xf8fafc, [0.22, 0.44, 0], { e: 0.1, metal: 0.8 });
+    const tipLight = new THREE.PointLight(0xdfefff, 0.5, 4, 2);
     tipLight.position.set(0, 0.65, 0);
     wrist.add(tipLight);
-    sph(wrist, 0.09, C.yellow, [0, 0.72, 0], { e: 0.9 });
+    sph(wrist, 0.09, 0xdfefff, [0, 0.72, 0], { e: 0.4 });
 
-    // Crate target
-    const crate = box(scene, 0.85, 0.85, 0.85, C.yellow, [4.1, 0.46, 1.4], { e: 0.16, rough: 0.7 });
-    box(scene, 0.9, 0.08, 0.9, 0xfef3c7, [4.1, 0.9, 1.4], { e: 0.35 });
-    const crateRing = torus(scene, 0.95, 0.025, C.yellow, [4.1, 0.03, 1.4], { rot: [Math.PI / 2, 0, 0], opacity: 0.6 });
-    const beacon = sph(scene, 0.12, C.cyan, [4.1, 1.35, 1.4], { e: 0.9 });
-
-    // Pick-and-place platform
-    box(scene, 2.3, 0.18, 2.3, 0x142c44, [4.1, 0.09, 1.4]);
-    for (let i = -1; i <= 1; i += 2) {
-      box(scene, 0.08, 1.2, 0.08, C.cyan, [4.1 + i * 1.0, 0.6, 0.35], { e: 0.45, opacity: 0.8 });
-      box(scene, 0.08, 1.2, 0.08, C.cyan, [4.1 + i * 1.0, 0.6, 2.45], { e: 0.45, opacity: 0.8 });
+    // Bins and ball challenge
+    const BIN_RADIUS = 3.45;
+    const BALL_HEIGHT = 1.18;
+    function binPosition(angleDeg) {
+      return new THREE.Vector3(BIN_RADIUS * Math.cos(rad(angleDeg)), 0, -BIN_RADIUS * Math.sin(rad(angleDeg)));
     }
+    function makeBin(letter, angleDeg, color) {
+      const group = new THREE.Group();
+      group.position.copy(binPosition(angleDeg));
+      cyl(group, 0.95, 1.1, 0.55, 0x1a3450, [0, 0.27, 0], { e: 0.08 });
+      cyl(group, 0.9, 0.9, 0.1, 0x244a68, [0, 0.58, 0], { e: 0.12 });
+      torus(group, 0.86, 0.045, color, [0, 0.66, 0], { rot: [Math.PI / 2, 0, 0], e: 0.55 });
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2;
+        box(group, 0.07, 0.42, 0.07, color, [Math.cos(a) * 0.82, 0.88, Math.sin(a) * 0.82], { e: 0.3, opacity: 0.8 });
+      }
+      const ring = torus(group, 1.05, 0.025, color, [0, 0.72, 0], { rot: [Math.PI / 2, 0, 0], opacity: 0.55 });
+      return { group, ring, color, pos: group.position };
+    }
+    const binA = makeBin("A", -30, C.orange);
+    const binB = makeBin("B", -150, C.green);
+    scene.add(binA.group, binB.group);
 
-    // Joint halos
+    const ball = sph(scene, 0.34, 0xfff1a8, [0, BALL_HEIGHT, 0], { e: 0.9, metal: 0.2, rough: 0.22, seg: 32, seg2: 24 });
+    const ballRing = torus(scene, 0.46, 0.018, C.yellow, [0, 0, 0], { rot: [Math.PI / 2, 0, 0], opacity: 0.5 });
+    const ballGlow = new THREE.PointLight(C.yellow, 0.7, 5, 2);
+    ball.add(ballGlow);
+    function homePosition(letter) {
+      const bin = letter === "A" ? binA : binB;
+      return new THREE.Vector3(bin.pos.x, BALL_HEIGHT, bin.pos.z);
+    }
+    function placeBallAt(letter) {
+      ball.position.copy(homePosition(letter));
+      ballRing.position.copy(ball.position);
+      ballRing.position.y -= 0.32;
+    }
+    placeBallAt("A");
+
+    // Joint halos are neutral; they are decoration, not trig labels.
     const halos = [];
-    [shoulder, elbow].forEach((g, i) => {
-      const h = torus(g, 0.58 + i * 0.05, 0.018, i ? C.magenta : C.cyan, [0, 0, 0], { opacity: 0.5 });
+    [shoulder, elbow].forEach((g) => {
+      const h = torus(g, 0.58, 0.018, 0x9bdcff, [0, 0, 0], { opacity: 0.22 });
       halos.push(h);
     });
 
-    const tmp = new THREE.Vector3();
+    let lastUI = 0;
+    let dropStartTime = 0;
+    let dropStart = new THREE.Vector3();
+    let dropTarget = new THREE.Vector3();
+    const tmpG = new THREE.Vector3();
+
+    function gripperWorld() {
+      wrist.updateWorldMatrix(true, false);
+      wrist.localToWorld(tmpG.set(0, 0.72, 0));
+      return tmpG.clone();
+    }
+
+    function targetPoint() {
+      const bin = ARM_GAME.target === "A" ? binA : binB;
+      return new THREE.Vector3(bin.pos.x, BALL_HEIGHT, bin.pos.z);
+    }
+
+    function grab() {
+      if (ARM_GAME.phase !== "ready") {
+        return { ok: false, message: ARM_GAME.phase === "carrying" ? "You are already holding the ball. Carry it to the target bin." : "Wait for the ball to settle, then try again." };
+      }
+      const gp = gripperWorld();
+      const d = gp.distanceTo(ball.position);
+      if (d > 1.85) {
+        ARM_GAME.distance = d;
+        return { ok: false, message: `Gripper is ${d.toFixed(1)} m from the ball. Rotate the base toward it and lower the shoulder/elbow.` };
+      }
+      ARM_GAME.held = true;
+      ARM_GAME.phase = "carrying";
+      ARM_GAME.message = `Ball grabbed. Carry it to Bin ${ARM_GAME.target} (base yaw ${ANGLE_OF[ARM_GAME.target]}°).`;
+      return { ok: true, message: ARM_GAME.message };
+    }
+
+    function drop() {
+      if (!ARM_GAME.held) return { ok: false, message: "You are not holding a ball. Grab one from Bin A or B first." };
+      const tp = targetPoint();
+      const gp = gripperWorld();
+      const d = gp.distanceTo(tp);
+      if (d > 2.0) {
+        ARM_GAME.distance = d;
+        return { ok: false, message: `Target Bin ${ARM_GAME.target} is ${d.toFixed(1)} m away. Move the gripper over it before dropping.` };
+      }
+      ARM_GAME.held = false;
+      ARM_GAME.phase = "dropping";
+      dropStart.copy(ball.position);
+      dropTarget.copy(tp);
+      dropStartTime = 0;
+      ARM_GAME.message = `Dropping into Bin ${ARM_GAME.target}…`;
+      return { ok: true, message: ARM_GAME.message };
+    }
+
+    function reset() {
+      ARM_GAME.held = false;
+      ARM_GAME.phase = "ready";
+      ARM_GAME.placed = 0;
+      ARM_GAME.source = "A";
+      ARM_GAME.target = "B";
+      placeBallAt("A");
+      ARM_GAME.message = "Game reset. Ball in Bin A (base yaw −30°); target Bin B (−150°).";
+      if (ARM_GAME.onChange) ARM_GAME.onChange();
+      return { ok: true, message: ARM_GAME.message };
+    }
+
     return {
       scene,
       camera: base.camera,
       target: base.target,
+      arm: { grab, drop, reset },
       update(t, s) {
         turret.rotation.y = rad(s.base);
         shoulder.rotation.z = rad(-s.shoulder);
         elbow.rotation.z = rad(s.elbow);
-        const spread = 0.1 + (1 - s.grip) * 0.28;
+        const spread = ARM_GAME.held ? 0.12 : 0.1 + (1 - s.grip) * 0.28;
         fingerL.position.x = -spread;
         fingerR.position.x = spread;
         fingerL.rotation.z = (1 - s.grip) * 0.12;
         fingerR.rotation.z = -(1 - s.grip) * 0.12;
-        const sweep = norm360(s.base);
-        updateLine(baseArc, arcPoints(0, 0.36, 0, 2.9, 0, rad(sweep), 52, "xz"));
+
+        // Draw the arc in the same direction as Three.js Y-rotation.
+        const sweep = rad(norm360(s.base));
+        const arcPts = [];
+        for (let i = 0; i <= 52; i++) {
+          const a = (sweep * i) / 52;
+          arcPts.push([2.9 * Math.cos(a), 0.36, -2.9 * Math.sin(a)]);
+        }
+        updateLine(baseArc, arcPts);
+
         halos.forEach((h, i) => {
           h.rotation.z = t * (i ? -0.6 : 0.8);
           h.rotation.x = t * 0.35;
-          h.material.opacity = 0.32 + 0.18 * Math.sin(t * 2 + i);
+          h.material.opacity = 0.18 + 0.08 * Math.sin(t * 2 + i);
         });
         padRing.scale.setScalar(1 + 0.035 * Math.sin(t * 2.2));
-        beacon.material.emissiveIntensity = 0.6 + 0.4 * Math.sin(t * 4);
-        beacon.position.y = 1.35 + (s.auto ? 0.08 * Math.sin(t * 3) : 0);
-        crateRing.rotation.z = t * 0.35;
-        if (s.auto) tipLight.intensity = 0.7 + 0.35 * Math.sin(t * 3.7);
-        tmp.set(0, 2.2, 0);
-        wrist.localToWorld(tmp);
-        tipLight.position.y = 0.65 + (s.auto ? 0.04 * Math.sin(t * 5) : 0);
+        binA.ring.material.opacity = ARM_GAME.target === "A" ? 0.65 + 0.25 * Math.sin(t * 3) : 0.18;
+        binB.ring.material.opacity = ARM_GAME.target === "B" ? 0.65 + 0.25 * Math.sin(t * 3) : 0.18;
+        binA.ring.scale.setScalar(ARM_GAME.target === "A" ? 1 + 0.05 * Math.sin(t * 3) : 1);
+        binB.ring.scale.setScalar(ARM_GAME.target === "B" ? 1 + 0.05 * Math.sin(t * 3) : 1);
+
+        if (ARM_GAME.phase === "ready") {
+          const home = homePosition(ARM_GAME.source);
+          ball.position.copy(home);
+          ball.position.y += 0.04 * Math.sin(t * 2.1);
+          ballRing.position.copy(ball.position);
+          ballRing.position.y -= 0.32;
+          ballRing.rotation.z = t * 0.7;
+        } else if (ARM_GAME.phase === "carrying") {
+          const gp = gripperWorld();
+          ball.position.copy(gp);
+          ball.position.y -= 0.24;
+          ballRing.position.copy(ball.position);
+          ballRing.position.y -= 0.32;
+          ballRing.rotation.z = t * 0.7;
+        } else if (ARM_GAME.phase === "dropping") {
+          if (!dropStartTime) dropStartTime = t;
+          const dropT = clamp((t - dropStartTime) / 0.6, 0, 1);
+          ball.position.lerpVectors(dropStart, dropTarget, dropT);
+          if (dropT >= 1) {
+            const landed = ARM_GAME.target;
+            ARM_GAME.placed += 1;
+            ARM_GAME.source = landed;
+            ARM_GAME.target = landed === "A" ? "B" : "A";
+            ARM_GAME.phase = "ready";
+            ARM_GAME.message = `Placed! ${ARM_GAME.placed} total. Ball is now in Bin ${ARM_GAME.source}; target Bin ${ARM_GAME.target}.`;
+            placeBallAt(ARM_GAME.source);
+            if (ARM_GAME.onChange) ARM_GAME.onChange();
+          }
+        }
+        ball.rotation.y = t * 1.2;
+        ballGlow.intensity = 0.55 + 0.25 * Math.sin(t * 3);
+        tipLight.intensity = 0.35 + (s.auto ? 0.2 * Math.sin(t * 3.7) : 0);
+
+        if (t - lastUI > 0.15) {
+          lastUI = t;
+          const gp = gripperWorld();
+          ARM_GAME.distance = ARM_GAME.held ? gp.distanceTo(targetPoint()) : gp.distanceTo(ball.position);
+          if (ARM_GAME.onTick) ARM_GAME.onTick();
+        }
       },
     };
   }
+
+  const ANGLE_OF = { A: -30, B: -150 };
 
   /* 02 — Tire / speedometer ------------------------------------------------ */
   function buildWheelScene(accent) {
@@ -3086,16 +3432,16 @@
     }
     sph(observer, 0.07, C.yellow, [0, eyeY, 0], { e: 0.8 });
     box(observer, 0.26, 0.12, 0.12, 0x7dd3fc, [0, eyeY, 0], { e: 0.4 });
-    const sight = box(observer, 0.34, 0.035, 0.035, C.magenta, [0.16, eyeY, 0], { e: 0.7 });
+    const sight = box(observer, 0.34, 0.035, 0.035, C.yellow, [0.16, eyeY, 0], { e: 0.7 });
 
     // Reference lines
     const horizontal = line([[0, eyeY, 0], [14, eyeY, 0]], C.cyan, 0.6, true);
     scene.add(horizontal);
-    const vertical = line([[0, 0, 0], [0, 8, 0]], C.yellow, 0.5, true);
+    const vertical = line([[0, 0, 0], [0, 8, 0]], C.magenta, 0.5, true);
     scene.add(vertical);
-    const sightLine = line([[0, eyeY, 0], [10, 5, 0]], C.magenta, 1);
+    const sightLine = line([[0, eyeY, 0], [10, 5, 0]], C.yellow, 1);
     scene.add(sightLine);
-    const angleArc = line(arcPoints(0, eyeY, 0, 1.35, 0, 0.6, 32, "xy"), C.yellow, 0.9);
+    const angleArc = line(arcPoints(0, eyeY, 0, 1.35, 0, 0.6, 32, "xy"), C.white, 0.9);
     scene.add(angleArc);
 
     // Rooftop marker
@@ -3640,7 +3986,7 @@
       // ratio markers
       const halfLine = line([[-half, wallH, depth + 0.4], [0, wallH, depth + 0.4]], C.cyan, 0.5, true);
       trussGroup.add(halfLine);
-      const riseLine = line([[half + 0.4, wallH, 0], [half + 0.4, wallH + rise, 0]], C.yellow, 0.5, true);
+      const riseLine = line([[half + 0.4, wallH, 0], [half + 0.4, wallH + rise, 0]], C.magenta, 0.5, true);
       trussGroup.add(riseLine);
       signature = `${span}-${pitch}`;
     }
@@ -3683,7 +4029,7 @@
     const coil = new THREE.Group();
     coil.position.set(0, 2.5, 0);
     scene.add(coil);
-    const coilMat = neon(C.magenta, { e: 0.55, metal: 0.7, rough: 0.25 });
+    const coilMat = neon(C.violet, { e: 0.55, metal: 0.7, rough: 0.25 });
     const coilW = 2.1;
     const coilH = 3.0;
     const coilPts = [
@@ -3924,7 +4270,7 @@
     scene.add(asymptote);
 
     // Right-triangle reference
-    const vertRef = line([[0, 0, 0], [0, 5, 0]], C.cyan, 0.55, true);
+    const vertRef = line([[0, 0, 0], [0, 5, 0]], C.magenta, 0.55, true);
     scene.add(vertRef);
     const shoreRef = line([[0, 0, 0], [7, 0, 0]], C.cyan, 0.55, true);
     scene.add(shoreRef);
@@ -4032,7 +4378,7 @@
     scene.add(rx);
     box(rx, 2.0, 1.1, 1.2, 0x1a2f47, [0, 0, 0], { e: 0.06, metal: 0.6 });
     box(rx, 1.6, 0.55, 0.02, 0x06131f, [0, 0.1, 0.62], { e: 0.02 });
-    box(rx, 1.45, 0.03, 0.02, C.cyan, [0, 0.28, 0.64], { e: 0.6 });
+    box(rx, 1.45, 0.03, 0.02, C.yellow, [0, 0.28, 0.64], { e: 0.6 });
     cyl(rx, 0.22, 0.22, 0.06, C.yellow, [0.55, -0.34, 0.6], { rot: [Math.PI / 2, 0, 0], e: 0.5 });
     cyl(rx, 0.18, 0.18, 0.06, 0x89b5d6, [-0.15, -0.34, 0.6], { rot: [Math.PI / 2, 0, 0], e: 0.2 });
     const rxLight = new THREE.PointLight(C.magenta, 0.7, 6, 2);
@@ -4204,8 +4550,8 @@
     scene.add(triGroup);
     const abLine = line([[0, 0.3, 0], [1, 0.3, 0]], C.cyan, 1);
     const acLine = line([[0, 0.3, 0], [1, 0.3, 0]], C.yellow, 1);
-    const bcLine = line([[0, 0.3, 0], [1, 0.3, 0]], C.magenta, 1);
-    const widthLine = line([[0, 0.3, 0], [0, 0.3, 0]], C.yellow, 0.8, true);
+    const bcLine = line([[0, 0.3, 0], [1, 0.3, 0]], C.yellow, 1);
+    const widthLine = line([[0, 0.3, 0], [0, 0.3, 0]], C.magenta, 0.8, true);
     triGroup.add(abLine, acLine, bcLine, widthLine);
     const pointA = sph(triGroup, 0.16, C.cyan, [0, 0.3, 0], { e: 0.8 });
     const pointB = sph(triGroup, 0.16, C.cyan, [0, 0.3, 0], { e: 0.8 });
@@ -4325,8 +4671,8 @@
     // Dynamic geometry
     const dynamic = new THREE.Group();
     scene.add(dynamic);
-    const bearingLine = line([[0, 0.12, 0], [1, 0.12, 0]], C.yellow, 1);
-    const baseline = line([[-1.5, 0.12, 0], [1, 0.12, 0]], C.cyan, 0.8, true);
+    const bearingLine = line([[0, 0.12, 0], [1, 0.12, 0]], C.cyan, 1);
+    const baseline = line([[-1.5, 0.12, 0], [1, 0.12, 0]], 0x9fb8cc, 0.6, true);
     dynamic.add(bearingLine, baseline);
     const circleLineA = line([], C.cyan, 0.6, true);
     dynamic.add(circleLineA);
@@ -4336,7 +4682,7 @@
       scene.add(g);
       return g;
     });
-    const heightLine = line([], C.magenta, 0.7, true);
+    const heightLine = line([], C.yellow, 0.7, true);
     dynamic.add(heightLine);
 
     let signature = "";
@@ -4365,7 +4711,7 @@
         const x = uniq[idx];
         if (x == null) return;
         const bxw = -1.5 + x;
-        const color = idx === 0 ? C.cyan : C.magenta;
+        const color = C.magenta;
         g.add(line([[-1.5, 0.14, 0], [bxw, 0.14, 0]], C.cyan, 0.9));
         g.add(line([[-1.5, 0.14, 0], [-1.5 + bx, 0.14, by]], C.yellow, 0.9));
         g.add(line([[bxw, 0.14, 0], [-1.5 + bx, 0.14, by]], color, 0.9, idx === 1));
@@ -4621,6 +4967,10 @@
     const flash = sph(barrelPivot, 0.3, C.yellow, [2.5, 0.05, 0], { e: 0.9, opacity: 0.7 });
     flash.visible = false;
 
+    // Cyan horizontal-velocity reference arrow
+    const hVelArrow = arrow(scene, [1, 0, 0], [0.2, 0.85, -0.9], 3.2, C.cyan, { head: 0.35, headWidth: 0.15 });
+    hVelArrow.position.set(0.2, 0.85, -0.9);
+
     // Trajectory
     const path = line([], C.yellow, 1.0);
     const pathGlow = line([], C.yellow, 0.18);
@@ -4765,9 +5115,13 @@
         sunGlow2.rotation.z = -t * 0.25;
         sunGlow.scale.setScalar(1 + 0.06 * Math.sin(t * 2));
         const sunDir = sunPos.clone().normalize();
-        // Panel normal aims at sun; rotate panel by panel azimuth offset
+        // Fixed 30° tilt; panel azimuth rotates the panel around the vertical axis.
         const panelAz = rad(s.panelAz);
-        const targetNormal = new THREE.Vector3(Math.cos(el) * Math.cos(panelAz), Math.sin(el), Math.cos(el) * Math.sin(panelAz)).normalize();
+        const targetNormal = new THREE.Vector3(
+          Math.cos(rad(SOLAR_TILT)) * Math.cos(panelAz),
+          Math.sin(rad(SOLAR_TILT)),
+          Math.cos(rad(SOLAR_TILT)) * Math.sin(panelAz)
+        ).normalize();
         q.setFromUnitVectors(up, targetNormal);
         panelPivot.quaternion.slerp(q, 0.12);
         // edge vector a = panel local +X transformed
@@ -4792,7 +5146,8 @@
           const end = new THREE.Vector3(tmpA.x * (i - 1.5) * 0.6, 1.3, tmpA.z * (i - 1.5) * 0.6);
           updateLine(r, [start, end]);
         });
-        const eff = Math.max(0, new THREE.Vector3(0, 1, 0).dot(tmpB)) * 100;
+        const panelNormalWorld = new THREE.Vector3(0, 1, 0).applyQuaternion(panelPivot.quaternion).normalize();
+        const eff = Math.max(0, panelNormalWorld.dot(tmpB)) * 100;
         const col = eff > 65 ? C.green : eff > 30 ? C.yellow : C.red;
         outputRing.material.color.set(col);
         outputRing.material.emissive.set(col);
@@ -5237,6 +5592,47 @@
      8. Module UI construction
      ------------------------------------------------------------------------ */
   const LEGEND_COLOR_MAP = {
+    "0° axis (cosine)": "#22d3ee",
+    "90° axis (sine)": "#f472b6",
+    "x-axis (cosine)": "#22d3ee",
+    "y-axis (sine)": "#f472b6",
+    "wheel rotation": "#22d3ee",
+    "speedometer": "#f472b6",
+    "ground distance (cosine side)": "#22d3ee",
+    "shore distance (cosine side)": "#22d3ee",
+    "lamp height (sine side)": "#f472b6",
+    "tower height (sine side)": "#f472b6",
+    "tangent sightline": "#facc15",
+    "incident ray": "#f472b6",
+    "refracted ray": "#22d3ee",
+    "normal": "#cbd5e1",
+    "ramp run (cosine side)": "#22d3ee",
+    "ramp rise (sine side)": "#facc15",
+    "safety status": "#4ade80",
+    "half-span (cosine side)": "#22d3ee",
+    "ridge rise (sine side)": "#f472b6",
+    "magnetic field": "#22d3ee",
+    "cosine trace": "#22d3ee",
+    "pendulum bob": "#f472b6",
+    "swing angle": "#facc15",
+    "wavefronts": "#22d3ee",
+    "carrier wave": "#f472b6",
+    "receiver": "#facc15",
+    "baseline": "#22d3ee",
+    "sightlines": "#facc15",
+    "river width": "#f472b6",
+    "survey triangle": "#4ade80",
+    "bearing line": "#22d3ee",
+    "altitude": "#facc15",
+    "leg a": "#22d3ee",
+    "leg b": "#facc15",
+    "horizontal velocity": "#22d3ee",
+    "projectile": "#f472b6",
+    "panel edge": "#22d3ee",
+    "panel normal": "#f472b6",
+    "globe grid": "#22d3ee",
+    "location pin": "#f472b6",
+    "coil": "#a78bfa",
     "cosine": "#22d3ee",
     "sine": "#f472b6",
     "rotation arc": "#facc15",
@@ -5250,20 +5646,17 @@
     "target": "#facc15",
     "rafters": "#facc15",
     "sine EMF": "#f472b6",
-    "coil": "#f472b6",
     "cosine shadow": "#22d3ee",
     "sine bob": "#f472b6",
     "trace": "#22d3ee",
     "tangent beam": "#facc15",
     "sine carrier": "#f472b6",
-    "wavefronts": "#22d3ee",
     "anti-noise": "#22d3ee",
     "noise": "#f472b6",
     "resultant": "#4ade80",
     "cosine baseline": "#22d3ee",
     "sine sightline": "#facc15",
-    "survey triangle": "#facc15",
-    "possible courses": "#4ade80",
+    "possible courses": "#f472b6",
     "cosine leg": "#22d3ee",
     "sine leg": "#facc15",
     "ground track": "#f472b6",
@@ -5385,7 +5778,7 @@
     const narr = NARRATIVES[meta.id];
     const rows = meta.legend
       .map((label) => {
-        const guide = (narr && narr.keys[label]) || {};
+        const guide = (narr && narr.keys[label]) || LABEL_GUIDES[label] || {};
         const color = legendColor(label);
         const meaning = guide.meaning || `A visual shorthand for ${label} in this simulator.`;
         return `
@@ -5401,7 +5794,7 @@
       <h2>How to read this scene</h2>
       <p>Colours are labels, not decoration. Tap any key to get the plain-English meaning and what it is doing in this specific simulator.</p>
       <div class="key-list">${rows}</div>
-      <p class="modal-note">The full palette: <strong style="color:#22d3ee">cyan for cosine / horizontal</strong>, <strong style="color:#f472b6">magenta for sine / vertical</strong>, and <strong style="color:#facc15">yellow for tangent, vectors and measurements</strong>.</p>
+      <p class="modal-note">Colours are chapter-specific. In chapters that split a direction into components, <strong style="color:#22d3ee">cyan marks the cosine/x/horizontal component</strong> and <strong style="color:#f472b6">magenta marks the sine/y/vertical component</strong>. <strong style="color:#facc15">Yellow marks tangent, vectors and measurements</strong>. The key above names exactly what each colour is here.</p>
       <div class="modal-actions">
         <button class="btn btn-primary" type="button" data-modal="close">Back to the lab</button>
         <button class="btn" type="button" data-story-jump="${meta.id}">Read the story again</button>
@@ -5411,7 +5804,7 @@
 
   function openLegend(meta, label) {
     const narr = NARRATIVES[meta.id];
-    const guide = (narr && narr.keys[label]) || {
+    const guide = (narr && narr.keys[label]) || LABEL_GUIDES[label] || {
       meaning: `A visual shorthand for ${label} in this chapter.`,
       here: meta.note,
     };
@@ -5490,6 +5883,18 @@
     el.innerHTML = `<strong>${escapeHtml(ctrl.label)} = ${escapeHtml(value)}.</strong> ${escapeHtml(guide.watch)} <span class="live-coach__trig">Trig focus: ${escapeHtml(lesson.concept || meta.title)}.</span>`;
   }
 
+  function updateArmGameUI() {
+    const status = $("[data-arm-status]");
+    if (status) {
+      let detail = "";
+      if (ARM_GAME.phase === "ready" && Number.isFinite(ARM_GAME.distance)) detail = ` · gripper ${ARM_GAME.distance.toFixed(1)} m from the ball`;
+      else if (ARM_GAME.phase === "carrying" && Number.isFinite(ARM_GAME.distance)) detail = ` · gripper ${ARM_GAME.distance.toFixed(1)} m from Bin ${ARM_GAME.target}`;
+      status.textContent = `${ARM_GAME.message}${detail}`;
+    }
+    const score = $("[data-arm-score]");
+    if (score) score.textContent = `${ARM_GAME.placed} placed`;
+  }
+
   function openFormula(meta) {
     const narr = NARRATIVES[meta.id];
     const story = storyFor(meta.id);
@@ -5526,9 +5931,10 @@
         </div>
         <h3>The colour language</h3>
         <div class="colour-legend">
-          <span><i style="background:#22d3ee"></i><strong>Cyan</strong> — cosine / horizontal share</span>
-          <span><i style="background:#f472b6"></i><strong>Magenta</strong> — sine / vertical share</span>
+          <span><i style="background:#22d3ee"></i><strong>Cyan</strong> — often the cosine / x / horizontal component</span>
+          <span><i style="background:#f472b6"></i><strong>Magenta</strong> — often the sine / y / vertical component</span>
           <span><i style="background:#facc15"></i><strong>Yellow</strong> — tangent, vectors, measurements</span>
+          <span class="colour-legend__note">Each chapter key names the exact object; colours are not universal labels.</span>
         </div>
         <p class="modal-note">Tap any coloured key in the 3D viewport, or tap the formula pill, for a plain-English pop-up. Use the <strong>Colour key</strong> and <strong>?</strong> buttons any time you feel lost.</p>
         <div class="modal-actions">
@@ -5726,6 +6132,15 @@
                 <div class="control-grid" data-controls="${meta.id}">
                   ${meta.controls.map((c) => controlMarkup(meta, c)).join("")}
                 </div>
+                ${meta.id === 1 ? `<div class="arm-game">
+                  <div class="arm-game__head"><span>Pick &amp; place challenge</span><span data-arm-score>0 placed</span></div>
+                  <div class="arm-game__buttons">
+                    <button class="btn btn-primary" type="button" data-arm="grab">✊ Grab</button>
+                    <button class="btn" type="button" data-arm="drop">🫳 Drop</button>
+                    <button class="btn btn-subtle" type="button" data-arm="reset">↺ Reset</button>
+                  </div>
+                  <p class="arm-game__status" data-arm-status>Move the gripper to the ball in Bin A, grab it, carry it to Bin B, and drop it.</p>
+                </div>` : ""}
                 <div class="live-coach">
                   <span class="live-coach__label">Live coach</span>
                   <p data-coach-text="${meta.id}">Move a slider or flip a switch. I'll explain what changed, what to watch, and the trig idea behind it. <span class="live-coach__trig">Trig focus: ${escapeHtml(lesson.concept || meta.title)}.</span></p>
@@ -5748,8 +6163,23 @@
       host.appendChild(panel);
     });
 
-    // Guided story, colour-key, formula, and control-help interactions (delegated once).
+    // Guided story, colour-key, formula, control-help, and arm-game interactions.
     host.addEventListener("click", (e) => {
+      const armBtn = e.target.closest("[data-arm]");
+      if (armBtn) {
+        const rec = Viewer.records.get(1);
+        if (!rec || !rec.arm) {
+          toast("Open Chapter 01 to use the pick-and-place challenge.", "info", "🦾");
+          return;
+        }
+        const action = armBtn.dataset.arm;
+        const result = rec.arm[action] ? rec.arm[action]() : null;
+        if (result && result.message) toast(result.message, result.ok ? "ok" : "warn", result.ok ? "✓" : "!");
+        updateArmGameUI();
+        updateHud(1);
+        updateReadout(1);
+        return;
+      }
       const controlHelp = e.target.closest("[data-control-help]");
       if (controlHelp) {
         openControlHelp(Number(controlHelp.dataset.controlId), controlHelp.dataset.controlHelp);
@@ -5866,6 +6296,14 @@
       updateReadout(meta.id);
       renderExercise(meta.id);
     });
+
+    ARM_GAME.onChange = () => {
+      updateHud(1);
+      updateReadout(1);
+      updateArmGameUI();
+    };
+    ARM_GAME.onTick = updateArmGameUI;
+    updateArmGameUI();
   }
 
   /* ------------------------------------------------------------------------
@@ -6411,9 +6849,10 @@
       <h3>Colour keys and formula decoder</h3>
       <p>The chips in the top-right of the 3D viewport are buttons. Tap one for a plain-English explanation of that colour in this specific simulator. Tap the formula pill next to the chapter title for a symbol-by-symbol decoder. On a phone, use the <strong>Colour key</strong> button above the 3D scene.</p>
       <ul>
-        <li><strong style="color:#22d3ee">Cyan</strong> — cosine / horizontal share.</li>
-        <li><strong style="color:#f472b6">Magenta</strong> — sine / vertical share.</li>
+        <li><strong style="color:#22d3ee">Cyan</strong> — often the cosine / x / horizontal component.</li>
+        <li><strong style="color:#f472b6">Magenta</strong> — often the sine / y / vertical component.</li>
         <li><strong style="color:#facc15">Yellow</strong> — tangent, vectors, beams, and measurements.</li>
+        <li>Each chapter key names the exact object; colours are not universal labels.</li>
       </ul>
       <h3>Spaced repetition ladder</h3>
       <table>

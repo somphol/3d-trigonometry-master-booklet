@@ -846,6 +846,28 @@ a { color: var(--cyan); }
   color: var(--muted);
 }
 .control-now strong { color: var(--accent); font-size: 0.72rem; }
+.arm-game {
+  margin-top: 10px;
+  padding: 10px 11px;
+  border: 1px solid rgba(251, 191, 36, 0.24);
+  border-radius: 10px;
+  background: rgba(251, 191, 36, 0.05);
+}
+.arm-game__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.arm-game__head span:last-child { color: var(--faint); letter-spacing: 0.02em; }
+.arm-game__buttons { display: flex; gap: 6px; margin: 8px 0 6px; }
+.arm-game__buttons .btn { flex: 1; justify-content: center; padding: 6px 7px; font-size: 0.64rem; }
+.arm-game__status { margin: 0; font-size: 0.63rem; line-height: 1.45; color: var(--muted); }
 
 /* Checkpoint ------------------------------------------------------------- */
 .checkpoint {
@@ -1645,6 +1667,7 @@ select option { background: #0b1728; }
 .modal-note { margin-top: 13px !important; font-size: 0.67rem !important; }
 .colour-legend { display: flex; flex-direction: column; gap: 7px; margin: 9px 0 0; }
 .colour-legend span { display: flex; align-items: center; gap: 8px; font-size: 0.72rem; color: var(--muted); }
+.colour-legend__note { margin-top: 4px; font-size: 0.62rem !important; color: var(--faint) !important; line-height: 1.45; }
 .colour-legend i { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .welcome-grid {
   display: grid;
