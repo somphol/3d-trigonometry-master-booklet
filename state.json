@@ -3,19 +3,19 @@
   "description": "TrigLab 3D — a research-informed, 20-tab interactive trigonometry booklet with learning agendas, five-step guided stories, per-control explanations, live coaching, accurate chapter-specific colour keys, engineering simulators, a playable ball-transfer game, checkpoint drills, and a portable spaced-repetition system.",
   "build": {
     "startedAt": "2026-10-31T23:31:24.546000Z",
-    "completedAt": "2026-11-01T01:24:51Z",
-    "durationSeconds": 6807,
-    "durationHuman": "1h 53m 27s",
+    "completedAt": "2026-11-01T01:51:55Z",
+    "durationSeconds": 8431,
+    "durationHuman": "2h 20m 31s",
     "timezone": "UTC"
   },
   "tokens": {
-    "input": 743792,
-    "output": 236508,
-    "reasoning": 173697,
-    "cacheRead": 127564928,
+    "input": 759831,
+    "output": 242724,
+    "reasoning": 177537,
+    "cacheRead": 136358528,
     "cacheWrite": 1583,
-    "total": 1153997,
-    "totalWithCache": 128720508,
+    "total": 1180092,
+    "totalWithCache": 137540203,
     "note": "Snapshot from the OpenCode session record when the project was packaged. total = input + output + reasoning. Cache reads/writes are reported separately because they are a subset of context usage."
   },
   "cost": {
@@ -99,12 +99,12 @@
         "lines": 1823
       },
       "script.js": {
-        "bytes": 335898,
+        "bytes": 335949,
         "lines": 7052
       }
     },
     "totalLines": 9040,
-    "totalBytes": 399554
+    "totalBytes": 399605
   },
   "verification": {
     "browser": "Headless Chrome 156 (SwiftShader WebGL)",

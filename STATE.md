@@ -6,27 +6,27 @@
 | Repository | <https://github.com/somphol/3d-trigonometry-master-booklet> |
 | Live demo | <https://somphol.github.io/3d-trigonometry-master-booklet/> |
 | Started | 2026-10-31 23:31:24 UTC |
-| Completed | 2026-11-01 01:24:51 UTC |
-| Duration | **1h 53m 27s** (6,807 seconds) |
+| Completed | 2026-11-01 01:51:55 UTC |
+| Duration | **2h 20m 31s** (8,431 seconds) |
 | Harness | OpenCode 2.2.5 |
 | Model | DeepSeek V4.1 Flash (`opencode-go/deepseek-v4.1-flash`) |
 | Session | `ses_e6bb24505ffelmj1LvBX4VBJSx` |
-| Source | 3 files · 9,040 lines · 399,554 bytes |
+| Source | 3 files · 9,040 lines · 399,605 bytes |
 | Tested | 20 agendas, 100 story steps, 60 control guides, 20 checkpoints, 0 console errors |
 
 ## Token usage
 
 | Metric | Tokens |
 | --- | ---: |
-| Input | 743,792 |
-| Output | 236,508 |
-| Reasoning | 173,697 |
-| **Total (input + output + reasoning)** | **1,153,997** |
-| Cache read | 127,564,928 |
+| Input | 759,831 |
+| Output | 242,724 |
+| Reasoning | 177,537 |
+| **Total (input + output + reasoning)** | **1,180,092** |
+| Cache read | 136,358,528 |
 | Cache write | 1,583 |
-| Total including cache | 128,720,508 |
+| Total including cache | 137,540,203 |
 
-> Snapshot taken from the OpenCode session record when the project was packaged at 2026-11-01 01:24:51 UTC. The final state-file commit/push and closing response occur outside this snapshot, so the live session totals will be marginally higher.
+> Snapshot taken from the OpenCode session record when the project was packaged at 2026-11-01 01:51:55 UTC. The final state-file commit/push and closing response occur outside this snapshot, so the live session totals will be marginally higher.
 
 ## What was built
 

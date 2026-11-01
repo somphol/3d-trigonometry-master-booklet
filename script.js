@@ -3099,7 +3099,7 @@
     const shoulder = new THREE.Group();
     shoulder.position.y = 1.25;
     turret.add(shoulder);
-    sph(shoulder, 0.44, 0x9bdcff, [0, 0, 0], { e: 0.3 });
+    sph(shoulder, 0.44, 0x4d7a9c, [0, 0, 0], { e: 0.18, metal: 0.65 });
     box(shoulder, 0.44, 2.7, 0.48, 0x2b6cb0, [0, 1.35, 0]);
     box(shoulder, 0.18, 2.45, 0.18, 0xd8ecff, [0.24, 1.36, 0], { e: 0.3, metal: 0.7 });
 
@@ -3107,7 +3107,7 @@
     const elbow = new THREE.Group();
     elbow.position.y = 2.7;
     shoulder.add(elbow);
-    sph(elbow, 0.36, 0xd9e7f2, [0, 0, 0], { e: 0.3 });
+    sph(elbow, 0.36, 0x4d7a9c, [0, 0, 0], { e: 0.18, metal: 0.65 });
     box(elbow, 0.34, 2.2, 0.36, 0x2b6cb0, [0, 1.1, 0]);
     box(elbow, 0.14, 1.95, 0.14, 0xd8ecff, [0.21, 1.08, 0], { e: 0.3 });
 
@@ -3118,10 +3118,10 @@
     box(wrist, 0.7, 0.28, 0.62, 0xdfefff, [0, 0.03, 0], { e: 0.2 });
     const fingerL = box(wrist, 0.12, 0.62, 0.18, 0xf8fafc, [-0.22, 0.44, 0], { e: 0.1, metal: 0.8 });
     const fingerR = box(wrist, 0.12, 0.62, 0.18, 0xf8fafc, [0.22, 0.44, 0], { e: 0.1, metal: 0.8 });
-    const tipLight = new THREE.PointLight(0xdfefff, 0.5, 4, 2);
+    // A soft work light at the gripper, with no visible "ball-like" marker.
+    const tipLight = new THREE.PointLight(0xdfefff, 0.28, 3.5, 2);
     tipLight.position.set(0, 0.65, 0);
     wrist.add(tipLight);
-    sph(wrist, 0.09, 0xdfefff, [0, 0.72, 0], { e: 0.4 });
 
     // Bins and ball challenge
     const BIN_RADIUS = 3.45;
@@ -3146,7 +3146,7 @@
     const binB = makeBin("B", -150, C.green);
     scene.add(binA.group, binB.group);
 
-    const ball = sph(scene, 0.34, 0xfff1a8, [0, BALL_HEIGHT, 0], { e: 0.9, metal: 0.2, rough: 0.22, seg: 32, seg2: 24 });
+    const ball = sph(scene, 0.34, 0xffd23f, [0, BALL_HEIGHT, 0], { e: 1.0, metal: 0.15, rough: 0.2, seg: 32, seg2: 24 });
     const ballRing = torus(scene, 0.46, 0.018, C.yellow, [0, 0, 0], { rot: [Math.PI / 2, 0, 0], opacity: 0.5 });
     const ballGlow = new THREE.PointLight(C.yellow, 0.7, 5, 2);
     ball.add(ballGlow);
@@ -3297,7 +3297,7 @@
         }
         ball.rotation.y = t * 1.2;
         ballGlow.intensity = 0.55 + 0.25 * Math.sin(t * 3);
-        tipLight.intensity = 0.35 + (s.auto ? 0.2 * Math.sin(t * 3.7) : 0);
+        tipLight.intensity = 0.18 + (s.auto ? 0.08 * Math.sin(t * 3.7) : 0);
 
         if (t - lastUI > 0.15) {
           lastUI = t;
