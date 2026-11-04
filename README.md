@@ -150,6 +150,13 @@ If the 3D engine cannot load, the drills and SRS still work and a clear fallback
 ├── index.html                 # Shell, header, controls, boot screen, CDN scripts
 ├── style.css                  # Dark STEM design system + responsive layout
 ├── script.js                  # 20 modules, scenes, guided stories, SRS, grading, import/export
+├── AGENTS.md                  # Maintainer handoff
+├── CHANGELOG.md               # Change history
+├── docs/ARCHITECTURE.md       # Curriculum data, viewer, grading, SRS
+├── docs/REPRODUCTION.md       # Rebuild and acceptance checks
+├── docs/DEPLOYMENT.md         # Pages hosting, CDN dependencies, rollback
+├── docs/TESTING.md            # Evidence, headless audit, manual matrix
+├── docs/social-card.png       # 1200 × 630 link preview
 ├── screenshot.png             # Chapter 01 — agenda, five-step story, live coach
 ├── screenshot-welcome.png     # First-visit learner briefing
 ├── screenshot-control.png     # Per-control explanation pop-up
@@ -209,6 +216,11 @@ documentation fixes alike. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and th
 | Document | Purpose |
 | --- | --- |
 | [README.md](README.md) | Overview, setup, controls, and architecture |
+| [AGENTS.md](AGENTS.md) | Handoff for the next maintainer or agent |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Curriculum data, panels, shared viewer, grading, SRS |
+| [docs/REPRODUCTION.md](docs/REPRODUCTION.md) | How to rebuild the project from scratch |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Pages hosting, CDN dependencies, rollback |
+| [docs/TESTING.md](docs/TESTING.md) | Evidence, headless audit, manual test matrix |
 | [CHANGELOG.md](CHANGELOG.md) | Notable changes and release history |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Local workflow, constraints, and pull request checks |
 | [SECURITY.md](SECURITY.md) | Supported versions and private vulnerability reporting |
